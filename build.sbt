@@ -39,6 +39,14 @@ val scalaPbVersion = "0.5.39"
 libraryDependencies ++= Seq(
   "com.trueaccord.scalapb" %% "scalapb-runtime" % scalaPbVersion,
   "org.json4s" %% "json4s-jackson" % "3.4.0",
+  "com.trueaccord.scalapb" %% "scalapb-runtime" % "0.5.42" % "protobuf",
   "org.scalatest" %% "scalatest" % "3.0.0" % "test"
 )
 
+PB.protoSources in Compile := Seq(
+  (sourceDirectory in Test)(_ / "/protobuf").value
+)
+
+PB.targets in Compile := Seq(
+  scalapb.gen(grpc=false) -> (sourceDirectory in Test)(_ / "/scala").value
+)

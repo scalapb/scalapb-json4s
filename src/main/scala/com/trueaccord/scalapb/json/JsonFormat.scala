@@ -1,12 +1,19 @@
 package com.trueaccord.scalapb.json
 
+import java.time.Instant
+import java.time.format.DateTimeFormatter
+
 import com.fasterxml.jackson.core.Base64Variants
-import com.google.protobuf.ByteString
+import com.google.protobuf.{ByteString, InvalidProtocolBufferException}
 import com.google.protobuf.Descriptors.FieldDescriptor.JavaType
 import com.google.protobuf.Descriptors.{EnumValueDescriptor, FieldDescriptor}
+import com.google.protobuf.duration.Duration
+import com.google.protobuf.timestamp.Timestamp
+import com.google.protobuf.wrappers._
 import com.trueaccord.scalapb.{GeneratedMessage, GeneratedMessageCompanion, Message}
 import org.json4s.JsonAST._
 import org.json4s.{Reader, Writer}
+
 import scala.language.existentials
 
 case class JsonFormatException(msg: String, cause: Exception) extends Exception(msg, cause) {
@@ -14,6 +21,18 @@ case class JsonFormatException(msg: String, cause: Exception) extends Exception(
 }
 
 object JsonFormat {
+  private val BOOL_VALUE_NAME = BoolValue.descriptor.getFullName
+  private val INT32_VALUE_NAME = Int32Value.descriptor.getFullName
+  private val UINT32_VALUE_NAME =  UInt32Value.descriptor.getFullName
+  private val INT64_VALUE_NAME = Int64Value.descriptor.getFullName
+  private val UINT64_VALUE_NAME = UInt64Value.descriptor.getFullName
+  private val STRING_VALUE_NAME = StringValue.descriptor.getFullName
+  private val BYTES_VALUE_NAME = BytesValue.descriptor.getFullName
+  private val FLOAT_VALUE_NAME = FloatValue.descriptor.getFullName
+  private val DOUBLE_VALUE_NAME = DoubleValue.descriptor.getFullName
+  private val TIMESTAMP_VALUE_NAME = Timestamp.descriptor.getFullName
+  private val DURATION_VALUE_NAME = Duration.descriptor.getFullName
+
   def toJsonString[A](m: GeneratedMessage): String = {
     import org.json4s.jackson.JsonMethods._
     compact(toJson(m))
@@ -25,7 +44,7 @@ object JsonFormat {
     fromJson(parse(str))
   }
 
-  def toJson[A](m: GeneratedMessage): JObject = {
+  def toJson[A](m: GeneratedMessage): JValue = {
     JObject(
       m.getAllFields
         .map {
@@ -120,8 +139,11 @@ object JsonFormat {
     }
   }
 
+  // PRIVATE //
+
   @inline
   private def serializeField(fd: FieldDescriptor, value: Any): JValue = {
+    val wlsrl = getWellKnownSerializer(fd)
     if (fd.isMapField) {
       JObject(
         value.asInstanceOf[Seq[GeneratedMessage]].map {
@@ -133,8 +155,10 @@ object JsonFormat {
         }: _*)
     } else if (fd.isRepeated) {
       JArray(value.asInstanceOf[Seq[Any]].map(serializeSingleValue(fd, _)).toList)
-    }
-    else serializeSingleValue(fd, value)
+    } else if (wlsrl.isDefined) {
+      val f = wlsrl.get
+      f(value.asInstanceOf[GeneratedMessage])
+    } else serializeSingleValue(fd, value)
   }
 
   @inline
@@ -149,6 +173,59 @@ object JsonFormat {
     case JavaType.STRING => JString(value.asInstanceOf[String])
     case JavaType.BYTE_STRING => JString(
       Base64Variants.getDefaultVariant.encode(value.asInstanceOf[ByteString].toByteArray))
+  }
+
+  private def getWellKnownSerializer(fd: FieldDescriptor): Option[(GeneratedMessage) => JValue] = {
+    if(fd.getJavaType == JavaType.MESSAGE) {
+      fd.getMessageType.getFullName match {
+        case BOOL_VALUE_NAME |
+             INT32_VALUE_NAME |
+             UINT32_VALUE_NAME |
+             INT64_VALUE_NAME |
+             UINT64_VALUE_NAME |
+             STRING_VALUE_NAME |
+             BYTES_VALUE_NAME |
+             FLOAT_VALUE_NAME |
+             DOUBLE_VALUE_NAME =>
+          Some(writeWrapper)
+        case TIMESTAMP_VALUE_NAME =>
+          Some(writeTimestamp)
+        case DURATION_VALUE_NAME =>
+          Some(writeDuration)
+        case _ => None
+      }
+    }else None
+  }
+
+  private def getWellKnownDeserializer(fd: FieldDescriptor, jValue: JValue) = fd.getFullName match {
+    case BOOL_VALUE_NAME |
+         INT32_VALUE_NAME |
+         UINT32_VALUE_NAME |
+         INT64_VALUE_NAME |
+         UINT64_VALUE_NAME |
+         STRING_VALUE_NAME |
+         BYTES_VALUE_NAME |
+         FLOAT_VALUE_NAME |
+         DOUBLE_VALUE_NAME =>
+
+    case _ =>
+  }
+
+  private def writeWrapper(m: GeneratedMessage): JValue = {
+    val fd = m.companion.descriptor.findFieldByName("value")
+    if(fd == null) throw new InvalidProtocolBufferException("Invalid Wrapper Type")
+    serializeSingleValue(fd, m.getField(fd))
+  }
+
+  private def writeTimestamp(m: GeneratedMessage): JValue = {
+    val value = Timestamp.parseFrom(m.toByteArray)
+    JString(DateTimeFormatter.ISO_INSTANT.format(Instant.ofEpochSecond(value.seconds, value.nanos)))
+  }
+
+  private def writeDuration(m: GeneratedMessage): JValue = {
+    val value = Duration.parseFrom(m.toByteArray)
+    if(value.nanos == 0) JString(f"${value.seconds}%ds")
+    else JString(f"${value.seconds}%d.${value.nanos}%09ds")
   }
 
   implicit def protoToReader[T <: GeneratedMessage with Message[T] : GeneratedMessageCompanion]: Reader[T] =

@@ -1,11 +1,14 @@
 package com.trueaccord.scalapb.json
 
+import com.google.protobuf.ByteString
+import com.google.protobuf.duration.Duration
+import com.google.protobuf.timestamp.Timestamp
 import org.json4s.JValue
-import org.json4s.JsonAST.{JLong, JObject, JString}
-import org.json4s.jackson.JsonMethods._
 import org.json4s.JsonDSL._
+import org.json4s.jackson.JsonMethods._
 import org.scalatest.{FlatSpec, MustMatchers}
 import test.test._
+import test.test_pb3.TestPB3
 
 class JsonFormatSpec extends FlatSpec with MustMatchers {
   val TestProto = MyTest().update(
@@ -50,6 +53,40 @@ class JsonFormatSpec extends FlatSpec with MustMatchers {
 
   "TestJson" should "be TestProto when parsed from json" in {
     JsonFormat.fromJsonString[MyTest](TestJson) must be (TestProto)
+  }
+
+  val TestPB3Proto = TestPB3(
+    name = "Foo",
+    intValue = Some(-15),
+    longValue = Some(33L),
+    unsignedLongValue = Some(999999L),
+    floatValue = Some(3.14F),
+    doubleValue = Some(5.3333333),
+    boolValue = Some(true),
+    stringValue = Some("Hello"),
+    bytesValue = Some(ByteString.copyFromUtf8("Hello World")),
+    birth = Some(Timestamp(seconds = 631152000)),
+    blink = Some(Duration(seconds = 3600 * 24, nanos = 150000000))
+  )
+
+  val TestPB3Json =
+    """{
+      |   "bytesValue":"SGVsbG8gV29ybGQ=",
+      |   "name":"Foo",
+      |   "doubleValue":5.3333333,
+      |   "birth":"1990-01-01T00:00:00Z",
+      |   "unsignedLongValue":999999,
+      |   "boolValue":true,
+      |   "longValue":33,
+      |   "stringValue":"Hello",
+      |   "blink":"86400.150000000s",
+      |   "intValue":-15,
+      |   "floatValue":3.140000104904175
+      |}
+      |""".stripMargin
+
+  "TestJsonPB3" should "be TestPB3Proto when parsed from json" in {
+    println(JsonFormat.toJsonString(TestPB3Proto))
   }
 
 }
