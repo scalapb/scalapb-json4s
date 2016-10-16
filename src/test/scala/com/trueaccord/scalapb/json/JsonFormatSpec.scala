@@ -58,8 +58,8 @@ class JsonFormatSpec extends FlatSpec with MustMatchers {
   val TestPB3Proto = TestPB3(
     name = "Foo",
     intValue = Some(-15),
-    longValue = Some(33L),
-    unsignedLongValue = Some(999999L),
+    longValue = Some(333),
+    unsignedLongValue = Some(999),
     floatValue = Some(3.14F),
     doubleValue = Some(5.3333333),
     boolValue = Some(true),
@@ -71,22 +71,26 @@ class JsonFormatSpec extends FlatSpec with MustMatchers {
 
   val TestPB3Json =
     """{
-      |   "bytesValue":"SGVsbG8gV29ybGQ=",
-      |   "name":"Foo",
-      |   "doubleValue":5.3333333,
-      |   "birth":"1990-01-01T00:00:00Z",
-      |   "unsignedLongValue":999999,
-      |   "boolValue":true,
-      |   "longValue":33,
-      |   "stringValue":"Hello",
-      |   "blink":"86400.150000000s",
-      |   "intValue":-15,
-      |   "floatValue":3.140000104904175
+      |"bytesValue":"SGVsbG8gV29ybGQ=",
+      |"name":"Foo",
+      |"doubleValue":5.3333333,
+      |"birth":"1990-01-01T00:00:00Z",
+      |"unsignedLongValue":999,
+      |"boolValue":true,
+      |"longValue":333,
+      |"stringValue":"Hello",
+      |"blink":"86400.150000000s",
+      |"intValue":-15,
+      |"floatValue":3.140000104904175
       |}
-      |""".stripMargin
+      |""".stripMargin.replace("\n", "")
 
-  "TestJsonPB3" should "be TestPB3Proto when parsed from json" in {
-    println(JsonFormat.toJsonString(TestPB3Proto))
+  "TestPB3" should "be TestPB3Json when converted to proto" in {
+    JsonFormat.toJsonString(TestPB3Proto) must be (TestPB3Json)
   }
 
+  "TestJsonPB3" should "be TestPB3Proto when parsed from json" in {
+    JsonFormat.fromJsonString[TestPB3](TestPB3Json) must be (TestPB3Proto)
+  }
 }
+
