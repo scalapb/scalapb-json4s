@@ -1,6 +1,6 @@
 syntax = "proto2";
 
-package test;
+package jsontest;
 
 enum MyEnum {
   UNKNOWN = 0;

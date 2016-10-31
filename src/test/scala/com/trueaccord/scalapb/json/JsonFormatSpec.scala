@@ -1,11 +1,10 @@
 package com.trueaccord.scalapb.json
 
 import org.json4s.JValue
-import org.json4s.JsonAST.{JLong, JObject, JString}
 import org.json4s.jackson.JsonMethods._
 import org.json4s.JsonDSL._
 import org.scalatest.{FlatSpec, MustMatchers}
-import test.test._
+import jsontest.test._
 
 class JsonFormatSpec extends FlatSpec with MustMatchers {
   val TestProto = MyTest().update(
