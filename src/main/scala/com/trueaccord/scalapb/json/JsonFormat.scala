@@ -3,69 +3,88 @@ package com.trueaccord.scalapb.json
 import com.fasterxml.jackson.core.Base64Variants
 import com.google.protobuf.ByteString
 import com.google.protobuf.Descriptors.FieldDescriptor.JavaType
-import com.google.protobuf.Descriptors.{EnumValueDescriptor, FieldDescriptor}
-import com.trueaccord.scalapb.{GeneratedMessage, GeneratedMessageCompanion, Message}
+import com.google.protobuf.Descriptors.{ EnumValueDescriptor, FieldDescriptor }
+import com.trueaccord.scalapb.{ GeneratedMessage, GeneratedMessageCompanion, Message }
 import org.json4s.JsonAST._
-import org.json4s.{Reader, Writer}
+import org.json4s.{ Reader, Writer }
+
 import scala.language.existentials
 
 case class JsonFormatException(msg: String, cause: Exception) extends Exception(msg, cause) {
   def this(msg: String) = this(msg, null)
 }
 
-object JsonFormat {
-  def toJsonString[A](m: GeneratedMessage): String = {
+class Printer(
+  includingDefaultValueFields: Boolean = false,
+  preservingProtoFieldNames: Boolean = false) {
+
+  def print[A](m: GeneratedMessage): String = {
     import org.json4s.jackson.JsonMethods._
     compact(toJson(m))
   }
 
+  def toJson[A](m: GeneratedMessage): JObject = {
+    val b = List.newBuilder[JField]
+    m.getAllFields
+    b.sizeHint(m.companion.descriptor.getFields.size)
+    val i = m.companion.descriptor.getFields.iterator
+    while (i.hasNext) {
+      val f = i.next()
+      if (f.getType != FieldDescriptor.Type.GROUP) {
+        val name = if (preservingProtoFieldNames) f.getName else f.getJsonName
+        m.getField(f) match {
+          case null => if (includingDefaultValueFields && f.getJavaType != JavaType.MESSAGE) {
+            // We are never printing empty optional messages to prevent infinite recursion.
+            b += JField(name, JsonFormat.defaultJValue(f))
+          }
+          case Nil if f.isRepeated =>
+            if (includingDefaultValueFields) {
+              b += JField(name, if (f.isMapField) JObject() else JArray(Nil))
+            }
+          case v => b += JField(name, serializeField(f, v))
+        }
+      }
+    }
+    JObject(b.result())
+  }
+
+  @inline
+  private def serializeField(fd: FieldDescriptor, value: Any): JValue = {
+    if (fd.isMapField) {
+      JObject(
+        value.asInstanceOf[Seq[GeneratedMessage]].map {
+          v =>
+            val key = v.getField(v.companion.descriptor.findFieldByNumber(1)).toString
+            val valueDescriptor = v.companion.descriptor.findFieldByNumber(2)
+            val value = v.getField(valueDescriptor)
+            key -> serializeSingleValue(valueDescriptor, value)
+        }: _*)
+    } else if (fd.isRepeated) {
+      JArray(value.asInstanceOf[Seq[Any]].map(serializeSingleValue(fd, _)).toList)
+    }
+    else serializeSingleValue(fd, value)
+  }
+
+  @inline
+  private def serializeSingleValue(fd: FieldDescriptor, value: Any): JValue = fd.getJavaType match {
+    case JavaType.ENUM => JString(value.asInstanceOf[EnumValueDescriptor].getName)
+    case JavaType.MESSAGE => toJson(value.asInstanceOf[GeneratedMessage])
+    case JavaType.INT => JInt(value.asInstanceOf[Int])
+    case JavaType.LONG => JLong(value.asInstanceOf[Long])
+    case JavaType.DOUBLE => JDouble(value.asInstanceOf[Double])
+    case JavaType.FLOAT => JDouble(value.asInstanceOf[Float])
+    case JavaType.BOOLEAN => JBool(value.asInstanceOf[Boolean])
+    case JavaType.STRING => JString(value.asInstanceOf[String])
+    case JavaType.BYTE_STRING => JString(
+      Base64Variants.getDefaultVariant.encode(value.asInstanceOf[ByteString].toByteArray))
+  }
+}
+
+class Parser {
   def fromJsonString[A <: GeneratedMessage with Message[A]](str: String)(
     implicit cmp: GeneratedMessageCompanion[A]): A = {
     import org.json4s.jackson.JsonMethods._
     fromJson(parse(str))
-  }
-
-  def toJson[A](m: GeneratedMessage): JObject = {
-    JObject(
-      m.getAllFields
-        .map {
-          case (fd, v) =>
-            fd.getJsonName -> serializeField(fd, v)
-        }.toList)
-  }
-
-  def parseSingleValue(cmp: GeneratedMessageCompanion[_], fd: FieldDescriptor, value: JValue): Any = (fd.getJavaType, value) match {
-    case (JavaType.ENUM, JString(s)) => fd.getEnumType.findValueByName(s)
-    case (JavaType.MESSAGE, o: JObject) =>
-      // The asInstanceOf[] is a lie: we actually have a companion of some other message (not A),
-      // but this doesn't matter after erasure.
-      fromJson(o)(cmp.messageCompanionForField(fd)
-        .asInstanceOf[GeneratedMessageCompanion[T] forSome { type T <: GeneratedMessage with Message[T]}])
-    case (JavaType.INT, JInt(x)) => x.intValue
-    case (JavaType.INT, JDouble(x)) => x.intValue
-    case (JavaType.INT, JDecimal(x)) => x.intValue
-    case (JavaType.INT, JNull) => 0
-    case (JavaType.LONG, JLong(x)) => x.toLong
-    case (JavaType.LONG, JDecimal(x)) => x.longValue()
-    case (JavaType.LONG, JInt(x)) => x.toLong
-    case (JavaType.LONG, JNull) => 0L
-    case (JavaType.DOUBLE, JDouble(x)) => x
-    case (JavaType.DOUBLE, JInt(x)) => x.toDouble
-    case (JavaType.DOUBLE, JDecimal(x)) => x.toDouble
-    case (JavaType.DOUBLE, JNull) => 0.toDouble
-    case (JavaType.FLOAT, JDouble(x)) => x.toFloat
-    case (JavaType.FLOAT, JInt(x)) => x.toFloat
-    case (JavaType.FLOAT, JDecimal(x)) => x.toFloat
-    case (JavaType.FLOAT, JNull) => 0.toFloat
-    case (JavaType.BOOLEAN, JBool(b)) => b
-    case (JavaType.BOOLEAN, JNull) => false
-    case (JavaType.STRING, JString(s)) => s
-    case (JavaType.STRING, JNull) => ""
-    case (JavaType.BYTE_STRING, JString(s)) =>
-      ByteString.copyFrom(Base64Variants.getDefaultVariant.decode(s))
-    case (JavaType.BYTE_STRING, JNull) => ByteString.EMPTY
-    case _ => throw new JsonFormatException(
-      s"Unexpected value ($value) for field ${fd.getJsonName} of ${fd.getContainingType.getName}")
   }
 
   def fromJson[A <: GeneratedMessage with Message[A]](value: JValue)(
@@ -120,43 +139,78 @@ object JsonFormat {
     }
   }
 
-  @inline
-  private def serializeField(fd: FieldDescriptor, value: Any): JValue = {
-    if (fd.isMapField) {
-      JObject(
-        value.asInstanceOf[Seq[GeneratedMessage]].map {
-          v =>
-            val key = v.getField(v.companion.descriptor.findFieldByNumber(1)).toString
-            val valueDescriptor = v.companion.descriptor.findFieldByNumber(2)
-            val value = v.getField(valueDescriptor)
-            key -> serializeSingleValue(valueDescriptor, value)
-        }: _*)
-    } else if (fd.isRepeated) {
-      JArray(value.asInstanceOf[Seq[Any]].map(serializeSingleValue(fd, _)).toList)
-    }
-    else serializeSingleValue(fd, value)
+  protected def parseSingleValue(cmp: GeneratedMessageCompanion[_], fd: FieldDescriptor, value: JValue): Any = (fd.getJavaType, value) match {
+    case (JavaType.ENUM, JString(s)) => fd.getEnumType.findValueByName(s)
+    case (JavaType.MESSAGE, o: JObject) =>
+      // The asInstanceOf[] is a lie: we actually have a companion of some other message (not A),
+      // but this doesn't matter after erasure.
+      fromJson(o)(cmp.messageCompanionForField(fd)
+        .asInstanceOf[GeneratedMessageCompanion[T] forSome { type T <: GeneratedMessage with Message[T]}])
+    case (JavaType.INT, JInt(x)) => x.intValue
+    case (JavaType.INT, JDouble(x)) => x.intValue
+    case (JavaType.INT, JDecimal(x)) => x.intValue
+    case (JavaType.INT, JNull) => 0
+    case (JavaType.LONG, JLong(x)) => x.toLong
+    case (JavaType.LONG, JDecimal(x)) => x.longValue()
+    case (JavaType.LONG, JInt(x)) => x.toLong
+    case (JavaType.LONG, JNull) => 0L
+    case (JavaType.DOUBLE, JDouble(x)) => x
+    case (JavaType.DOUBLE, JInt(x)) => x.toDouble
+    case (JavaType.DOUBLE, JDecimal(x)) => x.toDouble
+    case (JavaType.DOUBLE, JNull) => 0.toDouble
+    case (JavaType.FLOAT, JDouble(x)) => x.toFloat
+    case (JavaType.FLOAT, JInt(x)) => x.toFloat
+    case (JavaType.FLOAT, JDecimal(x)) => x.toFloat
+    case (JavaType.FLOAT, JNull) => 0.toFloat
+    case (JavaType.BOOLEAN, JBool(b)) => b
+    case (JavaType.BOOLEAN, JNull) => false
+    case (JavaType.STRING, JString(s)) => s
+    case (JavaType.STRING, JNull) => ""
+    case (JavaType.BYTE_STRING, JString(s)) =>
+      ByteString.copyFrom(Base64Variants.getDefaultVariant.decode(s))
+    case (JavaType.BYTE_STRING, JNull) => ByteString.EMPTY
+    case _ => throw new JsonFormatException(
+      s"Unexpected value ($value) for field ${fd.getJsonName} of ${fd.getContainingType.getName}")
+  }
+}
+
+object JsonFormat {
+  val printer = new Printer()
+  val parser = new Parser()
+
+  def toJsonString[A](m: GeneratedMessage): String = printer.print(m)
+
+  def toJson[A](m: GeneratedMessage): JObject = printer.toJson(m)
+
+  def fromJson[A <: GeneratedMessage with Message[A] : GeneratedMessageCompanion](
+    value: JValue): A = {
+    parser.fromJson(value)
   }
 
-  @inline
-  private def serializeSingleValue(fd: FieldDescriptor, value: Any): JValue = fd.getJavaType match {
-    case JavaType.ENUM => JString(value.asInstanceOf[EnumValueDescriptor].getName)
-    case JavaType.MESSAGE => toJson(value.asInstanceOf[GeneratedMessage])
-    case JavaType.INT => JInt(value.asInstanceOf[Int])
-    case JavaType.LONG => JLong(value.asInstanceOf[Long])
-    case JavaType.DOUBLE => JDouble(value.asInstanceOf[Double])
-    case JavaType.FLOAT => JDouble(value.asInstanceOf[Float])
-    case JavaType.BOOLEAN => JBool(value.asInstanceOf[Boolean])
-    case JavaType.STRING => JString(value.asInstanceOf[String])
-    case JavaType.BYTE_STRING => JString(
-      Base64Variants.getDefaultVariant.encode(value.asInstanceOf[ByteString].toByteArray))
+  def fromJsonString[A <: GeneratedMessage with Message[A] : GeneratedMessageCompanion](
+    str: String): A = {
+    parser.fromJsonString(str)
   }
 
   implicit def protoToReader[T <: GeneratedMessage with Message[T] : GeneratedMessageCompanion]: Reader[T] =
     new Reader[T] {
-      def read(value: JValue): T = fromJson(value)
+      def read(value: JValue): T = parser.fromJson(value)
     }
 
   implicit def protoToWriter[T <: GeneratedMessage with Message[T]]: Writer[T] = new Writer[T] {
-    def write(obj: T): JValue = toJson(obj)
+    def write(obj: T): JValue = printer.toJson(obj)
+  }
+
+  def defaultJValue(fd: FieldDescriptor): JValue = {
+    require(fd.isOptional)
+    fd.getJavaType match {
+      case JavaType.INT | JavaType.LONG => JInt(0)
+      case JavaType.FLOAT | JavaType.DOUBLE => JDouble(0)
+      case JavaType.BOOLEAN => JBool(false)
+      case JavaType.STRING => JString("")
+      case JavaType.BYTE_STRING => JString("")
+      case JavaType.ENUM => JString(fd.getEnumType.getValues.get(0).getName)
+      case JavaType.MESSAGE => throw new RuntimeException("No default value for message")
+    }
   }
 }
