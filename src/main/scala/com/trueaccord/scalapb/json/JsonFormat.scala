@@ -15,19 +15,24 @@ case class JsonFormatException(msg: String, cause: Exception) extends Exception(
   def this(msg: String) = this(msg, null)
 }
 
-case class FormatRegistry(mapClass: Map[Class[_], _ => JValue] = Map.empty) {
-  def registerWriter[T <: GeneratedMessage](writer: T => JValue)(implicit ct: ClassTag[T]): FormatRegistry = {
-    copy(mapClass + (ct.runtimeClass -> writer))
+case class FormatRegistry(mapClass: Map[Class[_], (_ => JValue, JValue => _)] = Map.empty) {
+  def registerWriter[T <: GeneratedMessage](writer: T => JValue, parser: JValue => T)(implicit ct: ClassTag[T]): FormatRegistry = {
+    copy(mapClass + (ct.runtimeClass -> (writer, parser)))
   }
 
-  def get[T](klass: Class[_ <: T]): Option[T => JValue] =
-    mapClass.get(klass).asInstanceOf[Option[T => JValue]]
+  def getWriter[T](klass: Class[_ <: T]): Option[T => JValue] = {
+    mapClass.get(klass).map(_._1.asInstanceOf[T => JValue])
+  }
+
+  def getParser[T](klass: Class[_ <: T]): Option[JValue => T] = {
+    mapClass.get(klass).map(_._2.asInstanceOf[JValue => T])
+  }
 }
 
 class Printer(
   includingDefaultValueFields: Boolean = false,
   preservingProtoFieldNames: Boolean = false,
-  formatRegistry: FormatRegistry = Printer.DefaultRegistry) {
+  formatRegistry: FormatRegistry = JsonFormat.DefaultRegistry) {
 
   def print[A](m: GeneratedMessage): String = {
     import org.json4s.jackson.JsonMethods._
@@ -35,7 +40,7 @@ class Printer(
   }
 
   def toJson[A <: GeneratedMessage](m: A): JValue = {
-    formatRegistry.get[A](m.getClass) match {
+    formatRegistry.getWriter[A](m.getClass) match {
       case Some(f) => f(m)
       case None =>
         val b = List.newBuilder[JField]
@@ -95,11 +100,9 @@ class Printer(
 }
 
 object Printer {
-  val DefaultRegistry = FormatRegistry()
-      .registerWriter(WellKnownTypes.writeDuration)
 }
 
-class Parser {
+class Parser(formatRegistry: FormatRegistry = JsonFormat.DefaultRegistry) {
   def fromJsonString[A <: GeneratedMessage with Message[A]](str: String)(
     implicit cmp: GeneratedMessageCompanion[A]): A = {
     import org.json4s.jackson.JsonMethods._
@@ -108,6 +111,7 @@ class Parser {
 
   def fromJson[A <: GeneratedMessage with Message[A]](value: JValue)(
     implicit cmp: GeneratedMessageCompanion[A]): A = {
+
     import scala.collection.JavaConverters._
 
     def parseValue(fd: FieldDescriptor, value: JValue): Any = {
@@ -143,24 +147,28 @@ class Parser {
       } else parseSingleValue(cmp, fd, value)
     }
 
-    value match {
-      case JObject(fields) =>
-        val values: Map[String, JValue] = fields.map(k => k._1 -> k._2).toMap
+    formatRegistry.getParser(cmp.defaultInstance.getClass) match {
+      case Some(p) => p(value)
+      case None =>
+        value match {
+          case JObject(fields) =>
+            val values: Map[String, JValue] = fields.map(k => k._1 -> k._2).toMap
 
-        val valueMap: Map[FieldDescriptor, Any] = (for {
-          fd <- cmp.descriptor.getFields.asScala
-          jsValue <- values.get(fd.getJsonName)
-        } yield (fd, parseValue(fd, jsValue))).toMap
+            val valueMap: Map[FieldDescriptor, Any] = (for {
+              fd <- cmp.descriptor.getFields.asScala
+              jsValue <- values.get(fd.getJsonName)
+            } yield (fd, parseValue(fd, jsValue))).toMap
 
-        cmp.fromFieldsMap(valueMap)
-      case _ =>
-        throw new JsonFormatException(s"Expected an object, found ${value}")
+            cmp.fromFieldsMap(valueMap)
+          case _ =>
+            throw new JsonFormatException(s"Expected an object, found ${value}")
+        }
     }
   }
 
   protected def parseSingleValue(cmp: GeneratedMessageCompanion[_], fd: FieldDescriptor, value: JValue): Any = (fd.getJavaType, value) match {
     case (JavaType.ENUM, JString(s)) => fd.getEnumType.findValueByName(s)
-    case (JavaType.MESSAGE, o: JObject) =>
+    case (JavaType.MESSAGE, o: JValue) =>
       // The asInstanceOf[] is a lie: we actually have a companion of some other message (not A),
       // but this doesn't matter after erasure.
       fromJson(o)(cmp.messageCompanionForField(fd)
@@ -194,6 +202,12 @@ class Parser {
 }
 
 object JsonFormat {
+  val DefaultRegistry = FormatRegistry()
+    .registerWriter(WellKnownTypes.writeDuration, jv => jv match {
+      case JString(str) => WellKnownTypes.parseDuration(str)
+      case _ => throw new JsonFormatException("Expected a string.")
+    })
+
   val printer = new Printer()
   val parser = new Parser()
 
