@@ -2,6 +2,8 @@ syntax = "proto2";
 
 package jsontest;
 
+import "google/protobuf/duration.proto";
+
 enum MyEnum {
   UNKNOWN = 0;
   V1 = 1;
@@ -26,4 +28,8 @@ message MyTest {
   map<string, bool> string_to_bool = 13;
   optional bytes opt_bs = 14;
   optional bool opt_bool = 15;
+}
+
+message WellKnownTest {
+  optional google.protobuf.Duration duration = 1;
 }

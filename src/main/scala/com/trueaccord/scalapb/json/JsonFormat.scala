@@ -9,43 +9,58 @@ import org.json4s.JsonAST._
 import org.json4s.{ Reader, Writer }
 
 import scala.language.existentials
+import scala.reflect.ClassTag
 
 case class JsonFormatException(msg: String, cause: Exception) extends Exception(msg, cause) {
   def this(msg: String) = this(msg, null)
 }
 
+case class FormatRegistry(mapClass: Map[Class[_], _ => JValue] = Map.empty) {
+  def registerWriter[T <: GeneratedMessage](writer: T => JValue)(implicit ct: ClassTag[T]): FormatRegistry = {
+    copy(mapClass + (ct.runtimeClass -> writer))
+  }
+
+  def get[T](klass: Class[_ <: T]): Option[T => JValue] =
+    mapClass.get(klass).asInstanceOf[Option[T => JValue]]
+}
+
 class Printer(
   includingDefaultValueFields: Boolean = false,
-  preservingProtoFieldNames: Boolean = false) {
+  preservingProtoFieldNames: Boolean = false,
+  formatRegistry: FormatRegistry = Printer.DefaultRegistry) {
 
   def print[A](m: GeneratedMessage): String = {
     import org.json4s.jackson.JsonMethods._
     compact(toJson(m))
   }
 
-  def toJson[A](m: GeneratedMessage): JObject = {
-    val b = List.newBuilder[JField]
-    m.getAllFields
-    b.sizeHint(m.companion.descriptor.getFields.size)
-    val i = m.companion.descriptor.getFields.iterator
-    while (i.hasNext) {
-      val f = i.next()
-      if (f.getType != FieldDescriptor.Type.GROUP) {
-        val name = if (preservingProtoFieldNames) f.getName else f.getJsonName
-        m.getField(f) match {
-          case null => if (includingDefaultValueFields && f.getJavaType != JavaType.MESSAGE) {
-            // We are never printing empty optional messages to prevent infinite recursion.
-            b += JField(name, JsonFormat.defaultJValue(f))
-          }
-          case Nil if f.isRepeated =>
-            if (includingDefaultValueFields) {
-              b += JField(name, if (f.isMapField) JObject() else JArray(Nil))
+  def toJson[A <: GeneratedMessage](m: A): JValue = {
+    formatRegistry.get[A](m.getClass) match {
+      case Some(f) => f(m)
+      case None =>
+        val b = List.newBuilder[JField]
+        m.getAllFields
+        b.sizeHint(m.companion.descriptor.getFields.size)
+        val i = m.companion.descriptor.getFields.iterator
+        while (i.hasNext) {
+          val f = i.next()
+          if (f.getType != FieldDescriptor.Type.GROUP) {
+            val name = if (preservingProtoFieldNames) f.getName else f.getJsonName
+            m.getField(f) match {
+              case null => if (includingDefaultValueFields && f.getJavaType != JavaType.MESSAGE) {
+                // We are never printing empty optional messages to prevent infinite recursion.
+                b += JField(name, JsonFormat.defaultJValue(f))
+              }
+              case Nil if f.isRepeated =>
+                if (includingDefaultValueFields) {
+                  b += JField(name, if (f.isMapField) JObject() else JArray(Nil))
+                }
+              case v => b += JField(name, serializeField(f, v))
             }
-          case v => b += JField(name, serializeField(f, v))
+          }
         }
-      }
+        JObject(b.result())
     }
-    JObject(b.result())
   }
 
   @inline
@@ -61,8 +76,7 @@ class Printer(
         }: _*)
     } else if (fd.isRepeated) {
       JArray(value.asInstanceOf[Seq[Any]].map(serializeSingleValue(fd, _)).toList)
-    }
-    else serializeSingleValue(fd, value)
+    } else serializeSingleValue(fd, value)
   }
 
   @inline
@@ -78,6 +92,11 @@ class Printer(
     case JavaType.BYTE_STRING => JString(
       Base64Variants.getDefaultVariant.encode(value.asInstanceOf[ByteString].toByteArray))
   }
+}
+
+object Printer {
+  val DefaultRegistry = FormatRegistry()
+      .registerWriter(WellKnownTypes.writeDuration)
 }
 
 class Parser {
@@ -178,9 +197,9 @@ object JsonFormat {
   val printer = new Printer()
   val parser = new Parser()
 
-  def toJsonString[A](m: GeneratedMessage): String = printer.print(m)
+  def toJsonString[A <: GeneratedMessage](m: A): String = printer.print(m)
 
-  def toJson[A](m: GeneratedMessage): JObject = printer.toJson(m)
+  def toJson[A <: GeneratedMessage](m: A): JValue = printer.toJson(m)
 
   def fromJson[A <: GeneratedMessage with Message[A] : GeneratedMessageCompanion](
     value: JValue): A = {

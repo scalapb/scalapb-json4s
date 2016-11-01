@@ -125,5 +125,4 @@ class JsonFormatSpec extends FlatSpec with MustMatchers {
           |}""".stripMargin)
     )
   }
-
 }
