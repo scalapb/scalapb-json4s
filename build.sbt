@@ -1,8 +1,8 @@
 import ReleaseTransformations._
 
-scalaVersion := "2.11.7"
+scalaVersion := "2.11.8"
 
-crossScalaVersions := Seq("2.11.7", "2.10.5")
+crossScalaVersions := Seq("2.10.5", "2.11.8", "2.12.0")
 
 organization in ThisBuild := "com.trueaccord.scalapb"
 
@@ -34,7 +34,7 @@ releaseProcess := Seq[ReleaseStep](
   ReleaseStep(action = Command.process("sonatypeReleaseAll", _), enableCrossBuild = true)
 )
 
-val scalaPbVersion = "0.5.43"
+val scalaPbVersion = "0.5.44"
 
 libraryDependencies ++= Seq(
   "com.trueaccord.scalapb" %% "scalapb-runtime" % scalaPbVersion,
