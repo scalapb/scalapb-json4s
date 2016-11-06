@@ -1,10 +1,11 @@
 package com.trueaccord.scalapb.json
 
-import org.json4s.JValue
+import org.json4s.{JValue, JInt}
 import org.json4s.jackson.JsonMethods._
 import org.json4s.JsonDSL._
 import org.scalatest.{FlatSpec, MustMatchers}
 import jsontest.test._
+import jsontest.test3._
 import com.google.protobuf.util.{JsonFormat => JavaJsonFormat}
 
 class JsonFormatSpec extends FlatSpec with MustMatchers {
@@ -63,6 +64,39 @@ class JsonFormatSpec extends FlatSpec with MustMatchers {
     JsonFormat.toJson(MyTest()) must be (render(Map.empty[String, JValue]))
   }
 
+  "Empty object" should "give empty json for MyTest3" in {
+    JsonFormat.toJson(MyTest3()) must be (render(Map.empty[String, JValue]))
+  }
+
+  "Zero maps" should "give correct json" in {
+    JsonFormat.toJson(MyTest(
+      stringToInt32 = Map("" -> 17),
+      intToMytest = Map(0 -> MyTest()),
+      fixed64ToBytes = Map(0L -> com.google.protobuf.ByteString.copyFromUtf8("foobar")))) must be (
+        parse("""|{
+                 |  "stringToInt32": {"": 17},
+                 |  "intToMytest": {"0": {}},
+                 |  "fixed64ToBytes": {"0": "Zm9vYmFy"}
+                 |}""".stripMargin))
+  }
+
+  "Zero maps" should "give correct json for MyTest3" in {
+    JsonFormat.toJson(MyTest3(
+      stringToInt32 = Map("" -> 17),
+      intToMytest = Map(0 -> MyTest()),
+      fixed64ToBytes = Map(0L -> com.google.protobuf.ByteString.copyFromUtf8("foobar")))) must be (
+        parse("""|{
+                 |  "stringToInt32": {"": 17},
+                 |  "intToMytest": {"0": {}},
+                 |  "fixed64ToBytes": {"0": "Zm9vYmFy"}
+                 |}""".stripMargin))
+  }
+
+  "Set treat" should "give correct json" in {
+    JsonFormat.toJson(MyTest(trickOrTreat = MyTest.TrickOrTreat.Treat(MyTest()))) must be (
+        parse("""{"treat": {}}"""))
+  }
+
   "TestProto" should "be TestJson when converted to Proto" in {
     JsonFormat.toJson(TestProto) must be (parse(TestJson))
   }
@@ -99,7 +133,9 @@ class JsonFormatSpec extends FlatSpec with MustMatchers {
           |  "boolToString": {},
           |  "stringToBool": {},
           |  "optBs": "",
-          |  "optBool": false
+          |  "optBool": false,
+          |  "trick": 0,
+          |  "fixed64ToBytes": {}
           |}""".stripMargin)
     )
   }
@@ -121,7 +157,9 @@ class JsonFormatSpec extends FlatSpec with MustMatchers {
           |  "bool_to_string": {},
           |  "string_to_bool": {},
           |  "opt_bs": "",
-          |  "opt_bool": false
+          |  "opt_bool": false,
+          |  "trick": 0,
+          |  "fixed64_to_bytes": {}
           |}""".stripMargin)
     )
   }

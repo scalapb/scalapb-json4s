@@ -28,6 +28,13 @@ message MyTest {
   map<string, bool> string_to_bool = 13;
   optional bytes opt_bs = 14;
   optional bool opt_bool = 15;
+
+  oneof trick_or_treat {
+    int32 trick = 16;
+    MyTest treat = 17;
+  }
+
+  map<fixed64, bytes> fixed64_to_bytes = 18;
 }
 
 message WellKnownTest {

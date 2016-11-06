@@ -74,9 +74,10 @@ class Printer(
       JObject(
         value.asInstanceOf[Seq[GeneratedMessage]].map {
           v =>
-            val key = v.getField(v.companion.descriptor.findFieldByNumber(1)).toString
+            val keyDescriptor = v.companion.descriptor.findFieldByNumber(1)
+            val key = Option(v.getField(keyDescriptor)).getOrElse(JsonFormat.defaultValue(keyDescriptor)).toString
             val valueDescriptor = v.companion.descriptor.findFieldByNumber(2)
-            val value = v.getField(valueDescriptor)
+            val value = Option(v.getField(valueDescriptor)).getOrElse(JsonFormat.defaultValue(valueDescriptor))
             key -> serializeSingleValue(valueDescriptor, value)
         }: _*)
     } else if (fd.isRepeated) {
@@ -232,6 +233,20 @@ object JsonFormat {
 
   implicit def protoToWriter[T <: GeneratedMessage with Message[T]]: Writer[T] = new Writer[T] {
     def write(obj: T): JValue = printer.toJson(obj)
+  }
+
+  def defaultValue(fd: FieldDescriptor): Any = {
+    require(fd.isOptional)
+    fd.getJavaType match {
+      case JavaType.INT => 0
+      case JavaType.LONG => 0L
+      case JavaType.FLOAT | JavaType.DOUBLE => 0.0
+      case JavaType.BOOLEAN => false
+      case JavaType.STRING => ""
+      case JavaType.BYTE_STRING => ByteString.EMPTY
+      case JavaType.ENUM => fd.getEnumType.getValues.get(0)
+      case JavaType.MESSAGE => throw new RuntimeException("No default value for message")
+    }
   }
 
   def defaultJValue(fd: FieldDescriptor): JValue = {
