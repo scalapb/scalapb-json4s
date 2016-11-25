@@ -163,4 +163,16 @@ class JsonFormatSpec extends FlatSpec with MustMatchers {
           |}""".stripMargin)
     )
   }
+
+  "TestProto" should "format int64 as JSON string" in {
+    new Printer(formattingLongAsString = true).print(MyTest(bazinga = Some(642))) must be("""{"bazinga":"642"}""")
+  }
+
+  "TestProto" should "format int64 as JSON number" in {
+    new Printer().print(MyTest(bazinga = Some(642))) must be("""{"bazinga":642}""")
+  }
+
+  "TestProto" should "parse a number formatted as JSON string " in {
+    new Parser().fromJsonString[MyTest]("""{"bazinga":642}""") must be(MyTest(bazinga = Some(642)))
+  }
 }
