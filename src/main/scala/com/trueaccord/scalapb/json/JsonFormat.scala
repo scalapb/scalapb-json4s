@@ -32,7 +32,7 @@ case class FormatRegistry(mapClass: Map[Class[_], (_ => JValue, JValue => _)] = 
 class Printer(
   includingDefaultValueFields: Boolean = false,
   preservingProtoFieldNames: Boolean = false,
-  formattingLongAsString: Boolean = false,
+  formattingLongAsString: Boolean = true,
   formatRegistry: FormatRegistry = JsonFormat.DefaultRegistry) {
 
   def print[A](m: GeneratedMessage): String = {
@@ -91,7 +91,7 @@ class Printer(
     case JavaType.ENUM => JString(value.asInstanceOf[EnumValueDescriptor].getName)
     case JavaType.MESSAGE => toJson(value.asInstanceOf[GeneratedMessage])
     case JavaType.INT => JInt(value.asInstanceOf[Int])
-    case JavaType.LONG => if (formattingLongAsString) JString(Option(value).map(_.toString).orNull) else JLong(value.asInstanceOf[Long])
+    case JavaType.LONG => if (formattingLongAsString) JString(value.asInstanceOf[Long].toString) else JLong(value.asInstanceOf[Long])
     case JavaType.DOUBLE => JDouble(value.asInstanceOf[Double])
     case JavaType.FLOAT => JDouble(value.asInstanceOf[Float])
     case JavaType.BOOLEAN => JBool(value.asInstanceOf[Boolean])
