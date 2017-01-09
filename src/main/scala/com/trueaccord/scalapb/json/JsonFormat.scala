@@ -46,8 +46,8 @@ class Printer(
       case None =>
         val b = List.newBuilder[JField]
         m.getAllFields
-        b.sizeHint(m.companion.descriptor.getFields.size)
-        val i = m.companion.descriptor.getFields.iterator
+        b.sizeHint(m.companion.javaDescriptor.getFields.size)
+        val i = m.companion.javaDescriptor.getFields.iterator
         while (i.hasNext) {
           val f = i.next()
           if (f.getType != FieldDescriptor.Type.GROUP) {
@@ -75,9 +75,9 @@ class Printer(
       JObject(
         value.asInstanceOf[Seq[GeneratedMessage]].map {
           v =>
-            val keyDescriptor = v.companion.descriptor.findFieldByNumber(1)
+            val keyDescriptor = v.companion.javaDescriptor.findFieldByNumber(1)
             val key = Option(v.getField(keyDescriptor)).getOrElse(JsonFormat.defaultValue(keyDescriptor)).toString
-            val valueDescriptor = v.companion.descriptor.findFieldByNumber(2)
+            val valueDescriptor = v.companion.javaDescriptor.findFieldByNumber(2)
             val value = Option(v.getField(valueDescriptor)).getOrElse(JsonFormat.defaultValue(valueDescriptor))
             key -> serializeSingleValue(valueDescriptor, value)
         }: _*)
@@ -157,7 +157,7 @@ class Parser(formatRegistry: FormatRegistry = JsonFormat.DefaultRegistry) {
             val values: Map[String, JValue] = fields.map(k => k._1 -> k._2).toMap
 
             val valueMap: Map[FieldDescriptor, Any] = (for {
-              fd <- cmp.descriptor.getFields.asScala
+              fd <- cmp.javaDescriptor.getFields.asScala
               jsValue <- values.get(fd.getJsonName)
             } yield (fd, parseValue(fd, jsValue))).toMap
 
