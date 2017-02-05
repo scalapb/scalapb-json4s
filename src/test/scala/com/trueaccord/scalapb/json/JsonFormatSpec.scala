@@ -98,6 +98,7 @@ class JsonFormatSpec extends FlatSpec with MustMatchers {
   }
 
   "TestProto" should "be TestJson when converted to Proto" in {
+    println("---------------------------")
     JsonFormat.toJson(TestProto) must be (parse(TestJson))
   }
 
@@ -122,7 +123,7 @@ class JsonFormatSpec extends FlatSpec with MustMatchers {
         """{
           |  "hello": "",
           |  "foobar": 0,
-          |  "bazinga": 0,
+          |  "bazinga": "0",
           |  "primitiveSequence": [],
           |  "repMessage": [],
           |  "stringToInt32": {},
@@ -146,7 +147,7 @@ class JsonFormatSpec extends FlatSpec with MustMatchers {
         """{
           |  "hello": "",
           |  "foobar": 0,
-          |  "bazinga": 0,
+          |  "bazinga": "0",
           |  "primitive_sequence": [],
           |  "rep_message": [],
           |  "string_to_int32": {},
