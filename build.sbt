@@ -38,7 +38,7 @@ val scalaPbVersion = "0.5.47"
 
 libraryDependencies ++= Seq(
   "com.trueaccord.scalapb" %% "scalapb-runtime" % scalaPbVersion,
-  "org.json4s" %% "json4s-jackson" % "3.5.0",
+  "org.json4s" %% "json4s-jackson" % "3.2.10",
   "org.scalatest" %% "scalatest" % "3.0.0" % "test",
   "com.google.protobuf" % "protobuf-java-util" % "3.1.0" % "test",
   "com.google.protobuf" % "protobuf-java" % "3.1.0" % "protobuf"
