@@ -2,7 +2,7 @@ import ReleaseTransformations._
 
 scalaVersion := "2.11.8"
 
-crossScalaVersions := Seq("2.10.5", "2.11.8", "2.12.0")
+crossScalaVersions := Seq("2.10.6", "2.11.8", "2.12.1")
 
 organization in ThisBuild := "com.trueaccord.scalapb"
 
@@ -39,9 +39,9 @@ val scalaPbVersion = "0.6.0-pre1"
 libraryDependencies ++= Seq(
   "com.trueaccord.scalapb" %% "scalapb-runtime" % scalaPbVersion,
   "org.json4s" %% "json4s-jackson" % "3.5.0",
-  "org.scalatest" %% "scalatest" % "3.0.0" % "test",
-  "com.google.protobuf" % "protobuf-java-util" % "3.1.0" % "test",
-  "com.google.protobuf" % "protobuf-java" % "3.1.0" % "protobuf"
+  "org.scalatest" %% "scalatest" % "3.0.1" % "test",
+  "com.google.protobuf" % "protobuf-java-util" % "3.2.0" % "test",
+  "com.google.protobuf" % "protobuf-java" % "3.2.0" % "protobuf"
 )
 
 Project.inConfig(Test)(sbtprotoc.ProtocPlugin.protobufConfigSettings)
