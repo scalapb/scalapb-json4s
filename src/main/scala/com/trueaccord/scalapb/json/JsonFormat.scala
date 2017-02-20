@@ -75,7 +75,7 @@ class Printer(
                 val value = if (valueDescriptor.protoType.isTypeMessage) {
                   toJson(x.getFieldByNumber(valueDescriptor.number).asInstanceOf[GeneratedMessage])
                 } else {
-                  serializeSingleValue(valueDescriptor, x.getField(valueDescriptor))
+                  JsonFormat.serializeSingleValue(valueDescriptor, x.getField(valueDescriptor), formattingLongAsNumber)
                 }
                 key -> value
             }: _*))
@@ -96,14 +96,14 @@ class Printer(
       }
       case PRepeated(xs) =>
         if (xs.nonEmpty || includingDefaultValueFields) {
-          b += JField(name, JArray(xs.map(serializeSingleValue(fd, _)).toList))
+          b += JField(name, JArray(xs.map(JsonFormat.serializeSingleValue(fd, _, formattingLongAsNumber)).toList))
         }
       case v =>
         if (includingDefaultValueFields ||
           !fd.isOptional ||
           !fd.file.isProto3 ||
           (v != JsonFormat.defaultValue(fd))) {
-          b += JField(name, serializeSingleValue(fd, v))
+          b += JField(name, JsonFormat.serializeSingleValue(fd, v, formattingLongAsNumber))
         }
     }
   }
@@ -128,20 +128,8 @@ class Printer(
     }
   }
 
-  @inline
-  private def serializeSingleValue(fd: FieldDescriptor, value: PValue): JValue = value match {
-    case PEnum(e) => JString(e.name)
-    case PInt(v) => JInt(v)
-    case PLong(v) => if (formattingLongAsNumber) JLong(v) else JString(v.toString)
-    case PDouble(v) => JDouble(v)
-    case PFloat(v) => JDouble(v)
-    case PBoolean(v) => JBool(v)
-    case PString(v) => JString(v)
-    case PByteString(v) => JString(Base64Variants.getDefaultVariant.encode(v.toByteArray))
-    case _: PMessage | PRepeated(_) | PEmpty => throw new RuntimeException("Should not happen")
-  }
-
-  private def defaultJValue(fd: FieldDescriptor): JValue = serializeSingleValue(fd, JsonFormat.defaultValue(fd))
+  private def defaultJValue(fd: FieldDescriptor): JValue = JsonFormat.serializeSingleValue(
+    fd, JsonFormat.defaultValue(fd), formattingLongAsNumber)
 }
 
 class Parser(formatRegistry: FormatRegistry = JsonFormat.DefaultRegistry) {
@@ -214,39 +202,15 @@ class Parser(formatRegistry: FormatRegistry = JsonFormat.DefaultRegistry) {
   protected def parseSingleValue(containerCompanion: GeneratedMessageCompanion[_], fd: FieldDescriptor, value: JValue): PValue = (fd.scalaType, value) match {
     case (ScalaType.Enum(ed), JString(s)) => PEnum(ed.values.find(_.name == s).getOrElse(throw new JsonFormatException(s"Unrecognized enum value '${s}'")))
     case (ScalaType.Message(md), o: JValue) =>
-      // The asInstanceOf[] is a lie: we actually have a companion of some other message (not A),
-      // but this doesn't matter after erasure.
       fromJsonToPMessage(containerCompanion.messageCompanionForFieldNumber(fd.number), o)
-    case (ScalaType.Int, JInt(x)) => PInt(x.intValue)
-    case (ScalaType.Int, JDouble(x)) => PInt(x.intValue)
-    case (ScalaType.Int, JDecimal(x)) => PInt(x.intValue)
-    case (ScalaType.Int, JNull) => PInt(0)
-    case (ScalaType.Long, JLong(x)) => PLong(x.toLong)
-    case (ScalaType.Long, JDecimal(x)) => PLong(x.longValue())
-    case (ScalaType.Long, JString(x)) => PLong(x.toLong)
-    case (ScalaType.Long, JInt(x)) => PLong(x.toLong)
-    case (ScalaType.Long, JNull) => PLong(0L)
-    case (ScalaType.Double, JDouble(x)) => PDouble(x)
-    case (ScalaType.Double, JInt(x)) => PDouble(x.toDouble)
-    case (ScalaType.Double, JDecimal(x)) => PDouble(x.toDouble)
-    case (ScalaType.Double, JNull) => PDouble(0.toDouble)
-    case (ScalaType.Float, JDouble(x)) => PFloat(x.toFloat)
-    case (ScalaType.Float, JInt(x)) => PFloat(x.toFloat)
-    case (ScalaType.Float, JDecimal(x)) => PFloat(x.toFloat)
-    case (ScalaType.Float, JNull) => PFloat(0.toFloat)
-    case (ScalaType.Boolean, JBool(b)) => PBoolean(b)
-    case (ScalaType.Boolean, JNull) => PBoolean(false)
-    case (ScalaType.String, JString(s)) => PString(s)
-    case (ScalaType.String, JNull) => PString("")
-    case (ScalaType.ByteString, JString(s)) =>
-      PByteString(ByteString.copyFrom(Base64Variants.getDefaultVariant.decode(s)))
-    case (ScalaType.ByteString, JNull) => PByteString(ByteString.EMPTY)
-    case _ => throw new JsonFormatException(
-      s"Unexpected value ($value) for field ${fd.asProto.getJsonName} of ${fd.containingMessage.name}")
+    case (st, v) => JsonFormat.parsePrimitiveByScalaType(st, v,
+      throw new JsonFormatException(
+        s"Unexpected value ($value) for field ${fd.asProto.getJsonName} of ${fd.containingMessage.name}"))
   }
 }
 
 object JsonFormat {
+  import com.google.protobuf.wrappers
   val DefaultRegistry = FormatRegistry()
     .registerWriter((d: Duration) => JString(Durations.writeDuration(d)), jv => jv match {
       case JString(str) => Durations.parseDuration(str)
@@ -256,6 +220,26 @@ object JsonFormat {
       case JString(str) => Timestamps.parseTimestamp(str)
       case _ => throw new JsonFormatException("Expected a string.")
     })
+    .registerWriter[wrappers.DoubleValue](primitiveWrapperWriter, primitiveWrapperParser[wrappers.DoubleValue])
+    .registerWriter[wrappers.FloatValue](primitiveWrapperWriter, primitiveWrapperParser[wrappers.FloatValue])
+    .registerWriter[wrappers.Int32Value](primitiveWrapperWriter, primitiveWrapperParser[wrappers.Int32Value])
+    .registerWriter[wrappers.Int64Value](primitiveWrapperWriter, primitiveWrapperParser[wrappers.Int64Value])
+    .registerWriter[wrappers.UInt32Value](primitiveWrapperWriter, primitiveWrapperParser[wrappers.UInt32Value])
+    .registerWriter[wrappers.UInt64Value](primitiveWrapperWriter, primitiveWrapperParser[wrappers.UInt64Value])
+    .registerWriter[wrappers.BoolValue](primitiveWrapperWriter, primitiveWrapperParser[wrappers.BoolValue])
+    .registerWriter[wrappers.BytesValue](primitiveWrapperWriter, primitiveWrapperParser[wrappers.BytesValue])
+    .registerWriter[wrappers.StringValue](primitiveWrapperWriter, primitiveWrapperParser[wrappers.StringValue])
+
+  def primitiveWrapperWriter[T <: GeneratedMessage with Message[T]](implicit cmp: GeneratedMessageCompanion[T]): (T => JValue) = {
+    val fieldDesc = cmp.scalaDescriptor.findFieldByNumber(1).get
+    t => serializeSingleValue(fieldDesc, t.getField(fieldDesc), formattingLongAsNumber = false)
+  }
+
+  def primitiveWrapperParser[T <: GeneratedMessage with Message[T]](implicit cmp: GeneratedMessageCompanion[T]): (JValue => T) = {
+    val fieldDesc = cmp.scalaDescriptor.findFieldByNumber(1).get
+    jv => cmp.messageReads.read(PMessage(Map(fieldDesc -> JsonFormat.parsePrimitiveByScalaType(
+      fieldDesc.scalaType, jv, throw new JsonFormatException(s"Unexpected value for ${cmp.scalaDescriptor.name}")))))
+  }
 
   val printer = new Printer()
   val parser = new Parser()
@@ -296,5 +280,45 @@ object JsonFormat {
       case ScalaType.Enum(ed) => PEnum(ed.values(0))
       case ScalaType.Message(_) => throw new RuntimeException("No default value for message")
     }
+  }
+
+  def parsePrimitiveByScalaType(scalaType: ScalaType, value: JValue, onError: => PValue): PValue = (scalaType, value) match {
+    case (ScalaType.Int, JInt(x)) => PInt(x.intValue)
+    case (ScalaType.Int, JDouble(x)) => PInt(x.intValue)
+    case (ScalaType.Int, JDecimal(x)) => PInt(x.intValue)
+    case (ScalaType.Int, JNull) => PInt(0)
+    case (ScalaType.Long, JLong(x)) => PLong(x.toLong)
+    case (ScalaType.Long, JDecimal(x)) => PLong(x.longValue())
+    case (ScalaType.Long, JString(x)) => PLong(x.toLong)
+    case (ScalaType.Long, JInt(x)) => PLong(x.toLong)
+    case (ScalaType.Long, JNull) => PLong(0L)
+    case (ScalaType.Double, JDouble(x)) => PDouble(x)
+    case (ScalaType.Double, JInt(x)) => PDouble(x.toDouble)
+    case (ScalaType.Double, JDecimal(x)) => PDouble(x.toDouble)
+    case (ScalaType.Double, JNull) => PDouble(0.toDouble)
+    case (ScalaType.Float, JDouble(x)) => PFloat(x.toFloat)
+    case (ScalaType.Float, JInt(x)) => PFloat(x.toFloat)
+    case (ScalaType.Float, JDecimal(x)) => PFloat(x.toFloat)
+    case (ScalaType.Float, JNull) => PFloat(0.toFloat)
+    case (ScalaType.Boolean, JBool(b)) => PBoolean(b)
+    case (ScalaType.Boolean, JNull) => PBoolean(false)
+    case (ScalaType.String, JString(s)) => PString(s)
+    case (ScalaType.String, JNull) => PString("")
+    case (ScalaType.ByteString, JString(s)) =>
+      PByteString(ByteString.copyFrom(Base64Variants.getDefaultVariant.decode(s)))
+    case (ScalaType.ByteString, JNull) => PByteString(ByteString.EMPTY)
+    case _ => onError
+  }
+
+  def serializeSingleValue(fd: FieldDescriptor, value: PValue, formattingLongAsNumber: Boolean): JValue = value match {
+    case PEnum(e) => JString(e.name)
+    case PInt(v) => JInt(v)
+    case PLong(v) => if (formattingLongAsNumber) JLong(v) else JString(v.toString)
+    case PDouble(v) => JDouble(v)
+    case PFloat(v) => JDouble(v)
+    case PBoolean(v) => JBool(v)
+    case PString(v) => JString(v)
+    case PByteString(v) => JString(Base64Variants.getDefaultVariant.encode(v.toByteArray))
+    case _: PMessage | PRepeated(_) | PEmpty => throw new RuntimeException("Should not happen")
   }
 }
