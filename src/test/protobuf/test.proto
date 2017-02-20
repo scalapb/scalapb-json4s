@@ -3,6 +3,7 @@ syntax = "proto2";
 package jsontest;
 
 import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
 
 enum MyEnum {
   UNKNOWN = 0;
@@ -39,4 +40,5 @@ message MyTest {
 
 message WellKnownTest {
   optional google.protobuf.Duration duration = 1;
+  optional google.protobuf.Timestamp timestamp = 2;
 }

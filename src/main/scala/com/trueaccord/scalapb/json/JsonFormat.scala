@@ -2,6 +2,8 @@ package com.trueaccord.scalapb.json
 
 import com.fasterxml.jackson.core.Base64Variants
 import com.google.protobuf.ByteString
+import com.google.protobuf.duration.Duration
+import com.google.protobuf.timestamp.Timestamp
 import com.trueaccord.scalapb.{GeneratedMessage, GeneratedMessageCompanion, Message}
 import org.json4s.JsonAST._
 import org.json4s.{Reader, Writer}
@@ -246,8 +248,12 @@ class Parser(formatRegistry: FormatRegistry = JsonFormat.DefaultRegistry) {
 
 object JsonFormat {
   val DefaultRegistry = FormatRegistry()
-    .registerWriter(WellKnownTypes.writeDuration, jv => jv match {
-      case JString(str) => WellKnownTypes.parseDuration(str)
+    .registerWriter((d: Duration) => JString(Durations.writeDuration(d)), jv => jv match {
+      case JString(str) => Durations.parseDuration(str)
+      case _ => throw new JsonFormatException("Expected a string.")
+    })
+    .registerWriter((t: Timestamp) => JString(Timestamps.writeTimestamp(t)), jv => jv match {
+      case JString(str) => Timestamps.parseTimestamp(str)
       case _ => throw new JsonFormatException("Expected a string.")
     })
 
