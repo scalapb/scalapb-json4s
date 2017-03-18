@@ -3,6 +3,7 @@ package com.trueaccord.scalapb.json
 import com.fasterxml.jackson.core.Base64Variants
 import com.google.protobuf.ByteString
 import com.google.protobuf.duration.Duration
+import com.google.protobuf.struct.NullValue
 import com.google.protobuf.timestamp.Timestamp
 import com.trueaccord.scalapb.{GeneratedMessage, GeneratedMessageCompanion, Message}
 import org.json4s.JsonAST._
@@ -200,7 +201,10 @@ class Parser(formatRegistry: FormatRegistry = JsonFormat.DefaultRegistry) {
   }
 
   protected def parseSingleValue(containerCompanion: GeneratedMessageCompanion[_], fd: FieldDescriptor, value: JValue): PValue = (fd.scalaType, value) match {
-    case (ScalaType.Enum(ed), JString(s)) => PEnum(ed.values.find(_.name == s).getOrElse(throw new JsonFormatException(s"Unrecognized enum value '${s}'")))
+    case (ScalaType.Enum(ed), JNull) if ed == NullValue.scalaDescriptor => PEnum(NullValue.NULL_VALUE.scalaValueDescriptor)
+    case (ScalaType.Enum(ed), JInt(v)) => PEnum(ed.findValueByNumber(v.toInt).getOrElse(throw new JsonFormatException(s"Invalid enum value: ${v.toInt} for enum type: ${ed.fullName}")))
+    case (ScalaType.Enum(ed), JString(s)) =>
+      PEnum(ed.values.find(_.name == s).getOrElse(throw new JsonFormatException(s"Unrecognized enum value '${s}'")))
     case (ScalaType.Message(md), o: JValue) =>
       fromJsonToPMessage(containerCompanion.messageCompanionForFieldNumber(fd.number), o)
     case (st, v) => JsonFormat.parsePrimitiveByScalaType(st, v,
@@ -229,6 +233,9 @@ object JsonFormat {
     .registerWriter[wrappers.BoolValue](primitiveWrapperWriter, primitiveWrapperParser[wrappers.BoolValue])
     .registerWriter[wrappers.BytesValue](primitiveWrapperWriter, primitiveWrapperParser[wrappers.BytesValue])
     .registerWriter[wrappers.StringValue](primitiveWrapperWriter, primitiveWrapperParser[wrappers.StringValue])
+    .registerWriter[com.google.protobuf.struct.Value](StructFormat.structValueWriter, StructFormat.structValueParser)
+    .registerWriter[com.google.protobuf.struct.Struct](StructFormat.structWriter, StructFormat.structParser)
+    .registerWriter[com.google.protobuf.struct.ListValue](StructFormat.listValueWriter, StructFormat.listValueParser)
 
   def primitiveWrapperWriter[T <: GeneratedMessage with Message[T]](implicit cmp: GeneratedMessageCompanion[T]): (T => JValue) = {
     val fieldDesc = cmp.scalaDescriptor.findFieldByNumber(1).get
@@ -311,7 +318,10 @@ object JsonFormat {
   }
 
   def serializeSingleValue(fd: FieldDescriptor, value: PValue, formattingLongAsNumber: Boolean): JValue = value match {
-    case PEnum(e) => JString(e.name)
+    case PEnum(e) =>
+      if (e.containingEnum == NullValue.scalaDescriptor)
+        JNull
+      else JString(e.name)
     case PInt(v) => JInt(v)
     case PLong(v) => if (formattingLongAsNumber) JLong(v) else JString(v.toString)
     case PDouble(v) => JDouble(v)

@@ -3,6 +3,7 @@ syntax = "proto3";
 package jsontest;
 
 import "test.proto";
+import "google/protobuf/struct.proto";
 import "google/protobuf/wrappers.proto";
 
 message MyTest3 {
@@ -25,4 +26,9 @@ message Wrapper {
   google.protobuf.BoolValue    w_bool   = 7;
   google.protobuf.StringValue  w_string = 8;
   google.protobuf.BytesValue   w_bytes  = 9;
+}
+
+message StructTest {
+  google.protobuf.NullValue nv = 1;
+  repeated google.protobuf.NullValue rep_nv = 2;
 }

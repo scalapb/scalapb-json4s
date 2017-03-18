@@ -2,7 +2,7 @@ package com.trueaccord.scalapb.json
 
 import com.google.protobuf.duration.Duration
 import com.google.protobuf.timestamp.Timestamp
-import jsontest.test._
+import jsontest.test.WellKnownTest
 import org.json4s.jackson.JsonMethods._
 import org.scalatest.{FlatSpec, MustMatchers}
 
@@ -72,5 +72,4 @@ class WellKnownTypesSpec extends FlatSpec with MustMatchers {
     JsonFormat.parser.fromJsonString[WellKnownTest](timestampJson) must be(timestampProto)
     JsonFormat.printer.toJson(timestampProto) must be(parse(timestampJson))
   }
-
 }

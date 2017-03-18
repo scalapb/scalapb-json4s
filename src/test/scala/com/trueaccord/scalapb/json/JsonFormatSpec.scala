@@ -173,7 +173,13 @@ class JsonFormatSpec extends FlatSpec with MustMatchers {
     new Printer(formattingLongAsNumber = true).print(MyTest(bazinga = Some(642))) must be("""{"bazinga":642}""")
   }
 
-  "TestProto" should "parse a number formatted as JSON string " in {
+  "TestProto" should "parse a number formatted as JSON string" in {
     new Parser().fromJsonString[MyTest]("""{"bazinga":642}""") must be(MyTest(bazinga = Some(642)))
+  }
+
+  "TestProto" should "parse an enum formatted as number" in {
+    new Parser().fromJsonString[MyTest]("""{"optEnum":1}""") must be(MyTest(optEnum = Some(MyEnum.V1)))
+    new Parser().fromJsonString[MyTest]("""{"optEnum":2}""") must be(MyTest(optEnum = Some(MyEnum.V2)))
+    new Parser().fromJsonString[MyTest]("""{"optEnum":0.9}""") must be(MyTest(optEnum = Some(MyEnum.V2)))
   }
 }
