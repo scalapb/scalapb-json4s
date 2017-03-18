@@ -180,6 +180,5 @@ class JsonFormatSpec extends FlatSpec with MustMatchers {
   "TestProto" should "parse an enum formatted as number" in {
     new Parser().fromJsonString[MyTest]("""{"optEnum":1}""") must be(MyTest(optEnum = Some(MyEnum.V1)))
     new Parser().fromJsonString[MyTest]("""{"optEnum":2}""") must be(MyTest(optEnum = Some(MyEnum.V2)))
-    new Parser().fromJsonString[MyTest]("""{"optEnum":0.9}""") must be(MyTest(optEnum = Some(MyEnum.V2)))
   }
 }
