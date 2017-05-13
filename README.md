@@ -4,7 +4,7 @@ Json Formatting for ScalaPB
 This little library provides conversion methods between ScalaPB messages
 and JSON.
 
-[Documentation is here](http://trueaccord.github.io/json.html)
+[Documentation is here](http://scalapb.github.io/json.html)
 
 Bugs: https://github.com/scalapb/ScalaPB/issues/
 
