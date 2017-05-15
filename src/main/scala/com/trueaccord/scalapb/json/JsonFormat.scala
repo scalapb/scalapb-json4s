@@ -133,7 +133,10 @@ class Printer(
     fd, JsonFormat.defaultValue(fd), formattingLongAsNumber)
 }
 
-class Parser(formatRegistry: FormatRegistry = JsonFormat.DefaultRegistry) {
+class Parser(
+  preservingProtoFieldNames: Boolean = false,
+  formatRegistry: FormatRegistry = JsonFormat.DefaultRegistry) {
+
   def fromJsonString[A <: GeneratedMessage with Message[A]](str: String)(
     implicit cmp: GeneratedMessageCompanion[A]): A = {
     import org.json4s.jackson.JsonMethods._
@@ -143,6 +146,10 @@ class Parser(formatRegistry: FormatRegistry = JsonFormat.DefaultRegistry) {
   def fromJson[A <: GeneratedMessage with Message[A]](value: JValue)(
     implicit cmp: GeneratedMessageCompanion[A]): A = {
     cmp.messageReads.read(fromJsonToPMessage(cmp, value))
+  }
+
+  protected def serializedName(fd: FieldDescriptor): String = {
+    if (preservingProtoFieldNames) fd.asProto.getName else fd.asProto.getJsonName
   }
 
   private def fromJsonToPMessage(cmp: GeneratedMessageCompanion[_], value: JValue): PMessage = {
@@ -170,13 +177,13 @@ class Parser(formatRegistry: FormatRegistry = JsonFormat.DefaultRegistry) {
                     valueDescriptor -> parseSingleValue(cmp.messageCompanionForFieldNumber(fd.number), valueDescriptor, jValue)))
             }(scala.collection.breakOut))
           case _ => throw new JsonFormatException(
-            s"Expected an object for map field ${fd.asProto.getJsonName} of ${fd.containingMessage.name}")
+            s"Expected an object for map field ${serializedName(fd)} of ${fd.containingMessage.name}")
         }
       } else if (fd.isRepeated) {
         value match {
           case JArray(vals) => PRepeated(vals.map(parseSingleValue(cmp, fd, _)).toVector)
           case _ => throw new JsonFormatException(
-            s"Expected an array for repeated field ${fd.asProto.getJsonName} of ${fd.containingMessage.name}")
+            s"Expected an array for repeated field ${serializedName(fd)} of ${fd.containingMessage.name}")
         }
       } else parseSingleValue(cmp, fd, value)
     }
@@ -190,7 +197,7 @@ class Parser(formatRegistry: FormatRegistry = JsonFormat.DefaultRegistry) {
 
             val valueMap: Map[FieldDescriptor, PValue] = (for {
               fd <- cmp.scalaDescriptor.fields
-              jsValue <- values.get(fd.asProto.getJsonName)
+              jsValue <- values.get(serializedName(fd))
             } yield (fd, parseValue(fd, jsValue))).toMap
 
             PMessage(valueMap)
@@ -209,7 +216,7 @@ class Parser(formatRegistry: FormatRegistry = JsonFormat.DefaultRegistry) {
       fromJsonToPMessage(containerCompanion.messageCompanionForFieldNumber(fd.number), o)
     case (st, v) => JsonFormat.parsePrimitiveByScalaType(st, v,
       throw new JsonFormatException(
-        s"Unexpected value ($value) for field ${fd.asProto.getJsonName} of ${fd.containingMessage.name}"))
+        s"Unexpected value ($value) for field ${serializedName(fd)} of ${fd.containingMessage.name}"))
   }
 }
 

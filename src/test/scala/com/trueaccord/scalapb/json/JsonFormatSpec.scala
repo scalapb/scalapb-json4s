@@ -60,6 +60,24 @@ class JsonFormatSpec extends FlatSpec with MustMatchers {
       |  "optBool": false
       |}""".stripMargin
 
+  val PreservedTestJson =
+    """{
+      |  "hello": "Foo",
+      |  "foobar": 37,
+      |  "primitive_sequence": ["a", "b", "c"],
+      |  "rep_message": [{}, {"hello": "h11"}],
+      |  "opt_message": {"foobar": 39},
+      |  "string_to_int32": {"foo": 14, "bar": 19},
+      |  "int_to_mytest": {"14": {}, "35": {"hello": "boo"}},
+      |  "rep_enum": ["V1", "V2", "UNKNOWN"],
+      |  "opt_enum": "V2",
+      |  "int_to_enum": {"32": "V1", "35": "V2"},
+      |  "string_to_bool": {"ff": false, "tt": true},
+      |  "bool_to_string": {"false": "ff", "true": "tt"},
+      |  "opt_bool": false
+      |}
+      |""".stripMargin
+
   "Empty object" should "give empty json" in {
     JsonFormat.toJson(MyTest()) must be (render(Map.empty[String, JValue]))
   }
@@ -180,5 +198,9 @@ class JsonFormatSpec extends FlatSpec with MustMatchers {
   "TestProto" should "parse an enum formatted as number" in {
     new Parser().fromJsonString[MyTest]("""{"optEnum":1}""") must be(MyTest(optEnum = Some(MyEnum.V1)))
     new Parser().fromJsonString[MyTest]("""{"optEnum":2}""") must be(MyTest(optEnum = Some(MyEnum.V2)))
+  }
+
+  "PreservedTestJson" should "be TestProto when parsed from json" in {
+    new Parser(preservingProtoFieldNames = true).fromJsonString[MyTest](PreservedTestJson) must be (TestProto)
   }
 }
