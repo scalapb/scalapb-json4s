@@ -7,7 +7,7 @@ crossScalaVersions := Seq("2.10.6", "2.11.8", "2.12.1")
 
 organization in ThisBuild := "com.trueaccord.scalapb"
 
-name in ThisBuild := "scalapb-json4s"
+name := "scalapb-json4s"
 
 scalacOptions in ThisBuild ++= {
   CrossVersion.partialVersion(scalaVersion.value) match {
