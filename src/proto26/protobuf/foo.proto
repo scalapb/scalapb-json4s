@@ -1,0 +1,8 @@
+syntax = "proto2";
+
+package foo;
+
+message TestMessage {
+  optional int32 my_field = 1;
+  optional int32 another_field = 2;
+}

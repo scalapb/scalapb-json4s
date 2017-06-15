@@ -7,3 +7,6 @@ matrix:
   include:
   - scala: 2.12.1
     jdk: oraclejdk8
+
+script:
+- sbt ++$TRAVIS_SCALA_VERSION test proto26:test
