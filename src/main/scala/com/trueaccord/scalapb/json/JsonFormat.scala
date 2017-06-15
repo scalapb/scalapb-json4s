@@ -143,7 +143,7 @@ class Printer(
         b.sizeHint(descriptor.fields.size)
         descriptor.fields.foreach {
           f =>
-            val name = if (preservingProtoFieldNames) f.name else f.asProto.getJsonName
+            val name = if (preservingProtoFieldNames) f.name else JsonFormat.jsonName(f)
             if (f.protoType.isTypeMessage) {
               serializeMessageField(f, name, m.getFieldByNumber(f.number), b)
             } else {
@@ -190,7 +190,7 @@ class Parser(
   }
 
   private def serializedName(fd: FieldDescriptor): String = {
-    if (preservingProtoFieldNames) fd.asProto.getName else fd.asProto.getJsonName
+    if (preservingProtoFieldNames) fd.asProto.getName else JsonFormat.jsonName(fd)
   }
 
   private def fromJsonToPMessage(cmp: GeneratedMessageCompanion[_], value: JValue): PMessage = {
@@ -377,5 +377,9 @@ object JsonFormat {
       PByteString(ByteString.copyFrom(Base64Variants.getDefaultVariant.decode(s)))
     case (ScalaType.ByteString, JNull) => PByteString(ByteString.EMPTY)
     case _ => onError
+  }
+
+  def jsonName(fd: FieldDescriptor) = {
+    fd.asProto.jsonName.getOrElse(NameUtils.snakeCaseToCamelCase(fd.asProto.getName))
   }
 }
