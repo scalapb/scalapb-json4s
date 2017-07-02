@@ -1,14 +1,14 @@
 package com.trueaccord.scalapb.json
 
-import org.json4s.{JValue, JInt}
+import org.json4s.{JValue, JInt, JDouble}
 import org.json4s.jackson.JsonMethods._
 import org.json4s.JsonDSL._
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.scalatest.{FlatSpec, MustMatchers, OptionValues}
 import jsontest.test._
 import jsontest.test3._
 import com.google.protobuf.util.{JsonFormat => JavaJsonFormat}
 
-class JsonFormatSpec extends FlatSpec with MustMatchers {
+class JsonFormatSpec extends FlatSpec with MustMatchers with OptionValues {
   val TestProto = MyTest().update(
     _.hello := "Foo",
     _.foobar := 37,
@@ -202,5 +202,41 @@ class JsonFormatSpec extends FlatSpec with MustMatchers {
 
   "PreservedTestJson" should "be TestProto when parsed from json" in {
     new Parser(preservingProtoFieldNames = true).fromJsonString[MyTest](PreservedTestJson) must be (TestProto)
+  }
+
+  "DoubleFloatProto" should "parse NaNs" in {
+    val i = s"""{
+      "d": "NaN",
+      "f": "NaN"
+    }"""
+    val out = JsonFormat.fromJsonString[DoubleFloat](i)
+    out.d.value.isNaN must be (true)
+    out.f.value.isNaN must be (true)
+    (JsonFormat.toJson(out) \ "d").asInstanceOf[JDouble].num.isNaN must be(true)
+    (JsonFormat.toJson(out) \ "f").asInstanceOf[JDouble].num.isNaN must be(true)
+  }
+
+  "DoubleFloatProto" should "parse Infinity" in {
+    val i = s"""{
+      "d": "Infinity",
+      "f": "Infinity"
+    }"""
+    val out = JsonFormat.fromJsonString[DoubleFloat](i)
+    out.d.value.isPosInfinity must be (true)
+    out.f.value.isPosInfinity must be (true)
+    (JsonFormat.toJson(out) \ "d") must be (JDouble(Double.PositiveInfinity))
+    (JsonFormat.toJson(out) \ "f") must be (JDouble(Double.PositiveInfinity))
+  }
+
+  "DoubleFloatProto" should "parse -Infinity" in {
+    val i = s"""{
+      "d": "-Infinity",
+      "f": "-Infinity"
+    }"""
+    val out = JsonFormat.fromJsonString[DoubleFloat](i)
+    out.d.value.isNegInfinity must be (true)
+    out.f.value.isNegInfinity must be (true)
+    (JsonFormat.toJson(out) \ "d") must be (JDouble(Double.NegativeInfinity))
+    (JsonFormat.toJson(out) \ "f") must be (JDouble(Double.NegativeInfinity))
   }
 }

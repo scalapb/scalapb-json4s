@@ -42,3 +42,8 @@ message WellKnownTest {
   optional google.protobuf.Duration duration = 1;
   optional google.protobuf.Timestamp timestamp = 2;
 }
+
+message DoubleFloat {
+  optional double d = 1;
+  optional float f = 2;
+}
