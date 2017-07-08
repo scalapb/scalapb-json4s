@@ -116,7 +116,6 @@ class JsonFormatSpec extends FlatSpec with MustMatchers with OptionValues {
   }
 
   "TestProto" should "be TestJson when converted to Proto" in {
-    println("---------------------------")
     JsonFormat.toJson(TestProto) must be (parse(TestJson))
   }
 
@@ -198,6 +197,11 @@ class JsonFormatSpec extends FlatSpec with MustMatchers with OptionValues {
   "TestProto" should "parse an enum formatted as number" in {
     new Parser().fromJsonString[MyTest]("""{"optEnum":1}""") must be(MyTest(optEnum = Some(MyEnum.V1)))
     new Parser().fromJsonString[MyTest]("""{"optEnum":2}""") must be(MyTest(optEnum = Some(MyEnum.V2)))
+  }
+
+  "TestProto" should "parse a JValue to PMessage" in {
+    val pMessage = new Parser().fromJsonToPMessage(MyTest.messageCompanion, parse(TestJson))
+    MyTest.messageCompanion.messageReads.read(pMessage) must be(TestProto)
   }
 
   "PreservedTestJson" should "be TestProto when parsed from json" in {

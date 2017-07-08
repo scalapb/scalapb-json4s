@@ -193,7 +193,7 @@ class Parser(
     if (preservingProtoFieldNames) fd.asProto.getName else JsonFormat.jsonName(fd)
   }
 
-  private def fromJsonToPMessage(cmp: GeneratedMessageCompanion[_], value: JValue): PMessage = {
+  def fromJsonToPMessage(cmp: GeneratedMessageCompanion[_], value: JValue): PMessage = {
 
     def parseValue(fd: FieldDescriptor, value: JValue): PValue = {
       if (fd.isMapField) {
