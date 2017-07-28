@@ -115,6 +115,31 @@ class JsonFormatSpec extends FlatSpec with MustMatchers with OptionValues {
         parse("""{"treat": {}}"""))
   }
 
+  "Parse treat" should "give correct proto with proto2" in {
+    JsonFormat.fromJsonString[MyTest]("""{"treat": {"hello": "x"}}""") must be(
+      MyTest(trickOrTreat=MyTest.TrickOrTreat.Treat(MyTest(hello=Some("x")))))
+    JsonFormat.fromJsonString[MyTest]("""{"treat": {}}""") must be(
+      MyTest(trickOrTreat=MyTest.TrickOrTreat.Treat(MyTest())))
+  }
+
+  "Parse treat" should "give correct proto with proto3" in {
+    JsonFormat.fromJsonString[MyTest3]("""{"treat": {"s": "x"}}""") must be(
+      MyTest3(trickOrTreat=MyTest3.TrickOrTreat.Treat(MyTest3(s="x"))))
+    JsonFormat.fromJsonString[MyTest3]("""{"treat": {}}""") must be(
+      MyTest3(trickOrTreat=MyTest3.TrickOrTreat.Treat(MyTest3())))
+  }
+
+  "parsing one offs" should "work correctly for issue 315" in {
+    JsonFormat.fromJsonString[jsontest.issue315.Msg]("""
+    {
+          "baz" : "1",
+          "foo" : {
+            "cols" : "1"
+          }
+    }""") must be(
+      jsontest.issue315.Msg(baz="1", someUnion=jsontest.issue315.Msg.SomeUnion.Foo(jsontest.issue315.Foo(cols="1"))))
+  }
+
   "TestProto" should "be TestJson when converted to Proto" in {
     println("---------------------------")
     JsonFormat.toJson(TestProto) must be (parse(TestJson))

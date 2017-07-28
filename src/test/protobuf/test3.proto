@@ -14,6 +14,11 @@ message MyTest3 {
   map<string, int32> string_to_int32 = 5;
   map<int32, MyTest> int_to_mytest = 6;
   map<fixed64, bytes> fixed64_to_bytes = 7;
+
+  oneof trick_or_treat {
+    int32 trick = 16;
+    MyTest3 treat = 17;
+  }
 }
 
 message Wrapper {
