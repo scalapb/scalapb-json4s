@@ -5,13 +5,15 @@ import com.google.protobuf.ByteString
 import com.google.protobuf.duration.Duration
 import com.google.protobuf.struct.NullValue
 import com.google.protobuf.timestamp.Timestamp
-import com.trueaccord.scalapb.{GeneratedEnum, GeneratedEnumCompanion, GeneratedMessage, GeneratedMessageCompanion, Message}
+import com.trueaccord.scalapb.json.JsonFormat.GenericCompanion
+import com.trueaccord.scalapb._
 import org.json4s.JsonAST._
 import org.json4s.{Reader, Writer}
 
 import scala.collection.mutable
+import scala.language.existentials
 import scala.reflect.ClassTag
-import scalapb.descriptors._
+import _root_.scalapb.descriptors._
 
 case class JsonFormatException(msg: String, cause: Exception) extends Exception(msg, cause) {
   def this(msg: String) = this(msg, null)
@@ -22,17 +24,18 @@ case class Formatter[T](
 
 case class FormatRegistry(
   messageFormatters: Map[Class[_], Formatter[_]] = Map.empty,
-  enumFormatters: Map[EnumDescriptor, Formatter[EnumValueDescriptor]] = Map.empty) {
+  enumFormatters: Map[EnumDescriptor, Formatter[EnumValueDescriptor]] = Map.empty,
+  registeredCompanions: Seq[GenericCompanion] = Seq.empty) {
 
   def registerMessageFormatter[T <: GeneratedMessage](
-      writer: (Printer, T) => JValue,
-      parser: (Parser, JValue) => T)(implicit ct: ClassTag[T]): FormatRegistry = {
+    writer: (Printer, T) => JValue,
+    parser: (Parser, JValue) => T)(implicit ct: ClassTag[T]): FormatRegistry = {
     copy(messageFormatters = messageFormatters + (ct.runtimeClass -> Formatter(writer, parser)))
   }
 
   def registerEnumFormatter[E <: GeneratedEnum](
-      writer: (Printer, EnumValueDescriptor) => JValue,
-      parser: (Parser, JValue) => EnumValueDescriptor)(implicit cmp: GeneratedEnumCompanion[E]): FormatRegistry = {
+    writer: (Printer, EnumValueDescriptor) => JValue,
+    parser: (Parser, JValue) => EnumValueDescriptor)(implicit cmp: GeneratedEnumCompanion[E]): FormatRegistry = {
     copy(enumFormatters = enumFormatters + (cmp.scalaDescriptor -> Formatter(writer, parser)))
   }
 
@@ -57,12 +60,44 @@ case class FormatRegistry(
   }
 }
 
+/** TypeRegistry is used to map the @type field in Any messages to a ScalaPB generated message.
+  *
+  * You need to
+  */
+case class TypeRegistry(companions: Map[String, GenericCompanion] = Map.empty) {
+  def addMessage[T <: GeneratedMessage with Message[T]](implicit cmp: GeneratedMessageCompanion[T]): TypeRegistry = {
+    addMessageByCompanion(cmp)
+  }
+
+  def addFile(file: GeneratedFileObject): TypeRegistry = {
+    val withDeps: TypeRegistry =
+      file.dependencies.foldLeft(this)((r, f) => r.addFile(f))
+
+    file.messagesCompanions.foldLeft(withDeps)((r, mc) => r.addMessageByCompanion(mc.asInstanceOf[GenericCompanion]))
+  }
+
+  def addMessageByCompanion(cmp: GenericCompanion): TypeRegistry = {
+    val withNestedMessages =
+      cmp.nestedMessagesCompanions.foldLeft(this)((r, mc) => r.addMessageByCompanion(mc.asInstanceOf[GenericCompanion]))
+    copy(companions = withNestedMessages.companions + ((TypeRegistry.TypePrefix + cmp.scalaDescriptor.fullName) -> cmp))
+  }
+
+  def findType(typeName: String): Option[GenericCompanion] = companions.get(typeName)
+}
+
+object TypeRegistry {
+  private val TypePrefix = "type.googleapis.com/"
+
+  def empty = TypeRegistry(Map.empty)
+}
+
+
 class Printer(
   includingDefaultValueFields: Boolean = false,
   preservingProtoFieldNames: Boolean = false,
   formattingLongAsNumber: Boolean = false,
-  formatRegistry: FormatRegistry = JsonFormat.DefaultRegistry) {
-
+  formatRegistry: FormatRegistry = JsonFormat.DefaultRegistry,
+  val typeRegistry: TypeRegistry = TypeRegistry.empty) {
   def print[A](m: GeneratedMessage): String = {
     import org.json4s.jackson.JsonMethods._
     compact(toJson(m))
@@ -176,7 +211,8 @@ class Printer(
 
 class Parser(
   preservingProtoFieldNames: Boolean = false,
-  formatRegistry: FormatRegistry = JsonFormat.DefaultRegistry) {
+  formatRegistry: FormatRegistry = JsonFormat.DefaultRegistry,
+  val typeRegistry: TypeRegistry = TypeRegistry.empty) {
 
   def fromJsonString[A <: GeneratedMessage with Message[A]](str: String)(
     implicit cmp: GeneratedMessageCompanion[A]): A = {
@@ -273,6 +309,9 @@ class Parser(
 
 object JsonFormat {
   import com.google.protobuf.wrappers
+
+  type GenericCompanion = GeneratedMessageCompanion[T] forSome { type T <: GeneratedMessage with Message[T] }
+
   val DefaultRegistry = FormatRegistry()
     .registerWriter((d: Duration) => JString(Durations.writeDuration(d)), jv => jv match {
       case JString(str) => Durations.parseDuration(str)
@@ -292,12 +331,13 @@ object JsonFormat {
     .registerMessageFormatter[wrappers.BytesValue](primitiveWrapperWriter, primitiveWrapperParser[wrappers.BytesValue])
     .registerMessageFormatter[wrappers.StringValue](primitiveWrapperWriter, primitiveWrapperParser[wrappers.StringValue])
     .registerEnumFormatter[NullValue]((_, _) => JNull, (parser, value) => value match {
-    case JNull => NullValue.NULL_VALUE.scalaValueDescriptor
-    case _ => parser.defaultEnumParser(NullValue.scalaDescriptor, value)
-  })
+      case JNull => NullValue.NULL_VALUE.scalaValueDescriptor
+      case _ => parser.defaultEnumParser(NullValue.scalaDescriptor, value)
+    })
     .registerWriter[com.google.protobuf.struct.Value](StructFormat.structValueWriter, StructFormat.structValueParser)
     .registerWriter[com.google.protobuf.struct.Struct](StructFormat.structWriter, StructFormat.structParser)
     .registerWriter[com.google.protobuf.struct.ListValue](StructFormat.listValueWriter, StructFormat.listValueParser)
+    .registerMessageFormatter[com.google.protobuf.any.Any](AnyFormat.anyWriter, AnyFormat.anyParser)
 
   def primitiveWrapperWriter[T <: GeneratedMessage with Message[T]](implicit cmp: GeneratedMessageCompanion[T]): ((Printer, T) => JValue) = {
     val fieldDesc = cmp.scalaDescriptor.findFieldByNumber(1).get
