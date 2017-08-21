@@ -7,6 +7,7 @@ import org.scalatest.{FlatSpec, MustMatchers, OptionValues}
 import jsontest.test._
 import jsontest.test3._
 import com.google.protobuf.util.{JsonFormat => JavaJsonFormat}
+import com.google.protobuf.any.{Any => PBAny}
 
 class JsonFormatSpec extends FlatSpec with MustMatchers with OptionValues {
   val TestProto = MyTest().update(
@@ -263,5 +264,32 @@ class JsonFormatSpec extends FlatSpec with MustMatchers with OptionValues {
     out.f.value.isNegInfinity must be (true)
     (JsonFormat.toJson(out) \ "d") must be (JDouble(Double.NegativeInfinity))
     (JsonFormat.toJson(out) \ "f") must be (JDouble(Double.NegativeInfinity))
+  }
+
+  "TestProto packed as any" should "give correctly wrapped TestJson" in {
+    val any = PBAny.pack(TestProto)
+    val expected = s"""{
+      "@type": "${any.typeUrl}",
+      "value": $TestJson
+    }"""
+
+    JsonFormat.toJson(any) must be (parse(expected))
+  }
+
+  "TestProto packed as any" should "be packed TestJson after JSON serialized" in {
+    val any = s"""{
+      "@type": "type.googleapis.com/jsontest.MyTest",
+      "value": $TestJson
+    }"""
+    val out = JsonFormat.fromJsonString[PBAny](any)
+
+    out must be (PBAny.pack(TestProto))
+  }
+
+  "TestProto packed as any" should "parse JSON produced by Java" in {
+    val any = com.google.protobuf.Any.pack(MyTest.toJavaProto(TestProto))
+    val in = JavaJsonFormat.printer().print(any)
+
+    JsonFormat.fromJsonString[PBAny](in) must be (PBAny.pack(TestProto))
   }
 }
