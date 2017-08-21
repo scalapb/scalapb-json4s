@@ -298,6 +298,7 @@ object JsonFormat {
     .registerWriter[com.google.protobuf.struct.Value](StructFormat.structValueWriter, StructFormat.structValueParser)
     .registerWriter[com.google.protobuf.struct.Struct](StructFormat.structWriter, StructFormat.structParser)
     .registerWriter[com.google.protobuf.struct.ListValue](StructFormat.listValueWriter, StructFormat.listValueParser)
+    .registerWriter[com.google.protobuf.any.Any](AnyFormat.anyWriter, AnyFormat.anyParser)
 
   def primitiveWrapperWriter[T <: GeneratedMessage with Message[T]](implicit cmp: GeneratedMessageCompanion[T]): ((Printer, T) => JValue) = {
     val fieldDesc = cmp.scalaDescriptor.findFieldByNumber(1).get

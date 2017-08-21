@@ -1,6 +1,6 @@
 package com.trueaccord.scalapb.json
 
-import org.json4s.{JValue, JInt, JDouble}
+import org.json4s.{JDouble, JValue}
 import org.json4s.jackson.JsonMethods._
 import org.json4s.JsonDSL._
 import org.scalatest.{FlatSpec, MustMatchers, OptionValues}
@@ -28,6 +28,25 @@ class JsonFormatSpec extends FlatSpec with MustMatchers with OptionValues {
 
   val TestJson =
     """{
+      |  "hello": "Foo",
+      |  "foobar": 37,
+      |  "primitiveSequence": ["a", "b", "c"],
+      |  "repMessage": [{}, {"hello": "h11"}],
+      |  "optMessage": {"foobar": 39},
+      |  "stringToInt32": {"foo": 14, "bar": 19},
+      |  "intToMytest": {"14": {}, "35": {"hello": "boo"}},
+      |  "repEnum": ["V1", "V2", "UNKNOWN"],
+      |  "optEnum": "V2",
+      |  "intToEnum": {"32": "V1", "35": "V2"},
+      |  "stringToBool": {"ff": false, "tt": true},
+      |  "boolToString": {"false": "ff", "true": "tt"},
+      |  "optBool": false
+      |}
+      |""".stripMargin
+
+  val TestJsonWithType =
+    """{
+      |  "@type": "type.googleapis.com/jsontest.MyTest",
       |  "hello": "Foo",
       |  "foobar": 37,
       |  "primitiveSequence": ["a", "b", "c"],
@@ -266,27 +285,18 @@ class JsonFormatSpec extends FlatSpec with MustMatchers with OptionValues {
     (JsonFormat.toJson(out) \ "f") must be (JDouble(Double.NegativeInfinity))
   }
 
-  "TestProto packed as any" should "give correctly wrapped TestJson" in {
+  "TestProto packed as any" should "give TestJsonWithType after JSON serialization" in {
     val any = PBAny.pack(TestProto)
-    val expected = s"""{
-      "@type": "${any.typeUrl}",
-      "value": $TestJson
-    }"""
 
-    JsonFormat.toJson(any) must be (parse(expected))
+    JsonFormat.toJson(any) must be (parse(TestJsonWithType))
   }
 
-  "TestProto packed as any" should "be packed TestJson after JSON serialized" in {
-    val any = s"""{
-      "@type": "type.googleapis.com/jsontest.MyTest",
-      "value": $TestJson
-    }"""
-    val out = JsonFormat.fromJsonString[PBAny](any)
-
+  "TestJsonWithType" should "be TestProto packed as any when parsed from JSON" in {
+    val out = JsonFormat.fromJson[PBAny](TestJsonWithType)
     out must be (PBAny.pack(TestProto))
   }
 
-  "TestProto packed as any" should "parse JSON produced by Java" in {
+  "Any" should "parse JSON produced by Java for a packed TestProto" in {
     val any = com.google.protobuf.Any.pack(MyTest.toJavaProto(TestProto))
     val in = JavaJsonFormat.printer().print(any)
 
