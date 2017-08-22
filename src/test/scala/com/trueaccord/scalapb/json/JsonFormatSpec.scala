@@ -241,6 +241,14 @@ class JsonFormatSpec extends FlatSpec with MustMatchers with OptionValues {
     new Parser().fromJsonString[MyTest]("""{"bazinga":642}""") must be(MyTest(bazinga = Some(642)))
   }
 
+  "TestProto" should "parse a negative uint64 formatted as JSON string" in {
+    new Parser().fromJsonString[MyTest]("""{"bazinga":"-1"}""") must be(MyTest(bazinga = Some(-1l)))
+  }
+
+  "TestProto" should "parse a large uint64 formatted as JSON string" in {
+    new Parser().fromJsonString[MyTest]("""{"bazinga":"10881926652273085354"}""") must be(MyTest(bazinga = Some(-7564817421436466262l)))
+  }
+
   "TestProto" should "parse an enum formatted as number" in {
     new Parser().fromJsonString[MyTest]("""{"optEnum":1}""") must be(MyTest(optEnum = Some(MyEnum.V1)))
     new Parser().fromJsonString[MyTest]("""{"optEnum":2}""") must be(MyTest(optEnum = Some(MyEnum.V2)))

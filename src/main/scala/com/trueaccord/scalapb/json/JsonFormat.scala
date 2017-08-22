@@ -403,7 +403,7 @@ object JsonFormat {
     case (ScalaType.Int, JNull) => PInt(0)
     case (ScalaType.Long, JLong(x)) => PLong(x.toLong)
     case (ScalaType.Long, JDecimal(x)) => PLong(x.longValue())
-    case (ScalaType.Long, JString(x)) => PLong(x.toLong)
+    case (ScalaType.Long, JString(x)) => parseLongFromString(x)
     case (ScalaType.Long, JInt(x)) => PLong(x.toLong)
     case (ScalaType.Long, JNull) => PLong(0L)
     case (ScalaType.Double, JDouble(x)) => PDouble(x)
@@ -428,6 +428,21 @@ object JsonFormat {
       PByteString(ByteString.copyFrom(Base64Variants.getDefaultVariant.decode(s)))
     case (ScalaType.ByteString, JNull) => PByteString(ByteString.EMPTY)
     case _ => onError
+  }
+
+  def parseLongFromString(value: String): PValue = {
+    try {
+      PLong(value.toLong)
+    } catch { case _: Exception =>
+      try {
+        // JSON doesn't distinguish between integer values and floating point values so "1" and
+        // "1.000" are treated as equal in JSON. For this reason we accept floating point values for
+        // integer fields as well as long as it actually is an integer (i.e., round(value) == value).
+        PLong(BigDecimal(value).longValue())
+      } catch { case e: Exception =>
+        throw JsonFormatException(s"Not an int64 value: $value", e)
+      }
+    }
   }
 
   def jsonName(fd: FieldDescriptor) = {
