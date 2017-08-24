@@ -1,9 +1,9 @@
 package com.trueaccord.scalapb.json
 
-import org.json4s.{JDouble, JValue}
+import org.json4s.{JDouble, JInt, JValue}
 import org.json4s.jackson.JsonMethods._
 import org.json4s.JsonDSL._
-import org.scalatest.{FlatSpec, MustMatchers, OptionValues}
+import org.scalatest.{Assertion, FlatSpec, MustMatchers, OptionValues}
 import jsontest.test._
 import jsontest.test3._
 import com.google.protobuf.util.{JsonFormat => JavaJsonFormat}
@@ -237,16 +237,65 @@ class JsonFormatSpec extends FlatSpec with MustMatchers with OptionValues {
     new Printer(formattingLongAsNumber = true).print(MyTest(bazinga = Some(642))) must be("""{"bazinga":642}""")
   }
 
-  "TestProto" should "parse a number formatted as JSON string" in {
-    new Parser().fromJsonString[MyTest]("""{"bazinga":642}""") must be(MyTest(bazinga = Some(642)))
-  }
+  "TestProto" should "parse numbers formatted as JSON string" in {
+    val parser = new Parser()
+    def validateAccepts(json: String, expected: IntFields): Assertion = {
+      parser.fromJsonString[IntFields](json) must be(expected)
+    }
+    def validateRejects(json: String): Assertion = {
+      a [JsonFormatException] mustBe thrownBy { parser.fromJsonString[IntFields](json) }
+    }
 
-  "TestProto" should "parse a negative uint64 formatted as JSON string" in {
-    new Parser().fromJsonString[MyTest]("""{"bazinga":"-1"}""") must be(MyTest(bazinga = Some(-1l)))
-  }
+    // int32
+    validateAccepts("""{"int":"642"}""", IntFields(int = Some(642)))
+    validateAccepts("""{"int":"-1"}""", IntFields(int = Some(-1)))
+    validateAccepts(s"""{"int":"${Integer.MAX_VALUE}"}""", IntFields(int = Some(Integer.MAX_VALUE)))
+    validateAccepts(s"""{"int":"${Integer.MIN_VALUE}"}""", IntFields(int = Some(Integer.MIN_VALUE)))
+    validateRejects(s"""{"int":"${Integer.MAX_VALUE.toLong + 1}"}""")
+    validateRejects(s"""{"int":"${Integer.MIN_VALUE.toLong - 1}"}""")
 
-  "TestProto" should "parse a large uint64 formatted as JSON string" in {
-    new Parser().fromJsonString[MyTest]("""{"bazinga":"10881926652273085354"}""") must be(MyTest(bazinga = Some(-7564817421436466262l)))
+    // int64
+    validateAccepts("""{"long":"642"}""", IntFields(long = Some(642L)))
+    validateAccepts("""{"long":"-1"}""", IntFields(long = Some(-1L)))
+    validateAccepts(s"""{"long":"${Long.MaxValue}"}""", IntFields(long = Some(Long.MaxValue)))
+    validateAccepts(s"""{"long":"${Long.MinValue}"}""", IntFields(long = Some(Long.MinValue)))
+    validateRejects(s"""{"long":"${BigInt(Long.MaxValue) + 1}"}""")
+    validateRejects(s"""{"long":"${BigInt(Long.MinValue) - 1}"}""")
+
+    // uint32
+    val uint32max: Long = (1L << 32) - 1
+    validateAccepts(s"""{"uint":"$uint32max"}""", IntFields(uint = Some(uint32max.toInt)))
+    validateRejects(s"""{"uint":"${uint32max + 1}"}""")
+    validateRejects("""{"uint":"-1"}""")
+
+    // uint64
+    val uint64max: BigInt = (BigInt(1) << 64) - 1
+    validateAccepts(s"""{"ulong":"$uint64max"}""", IntFields(ulong = Some(uint64max.toLong)))
+    validateRejects(s"""{"ulong":"${uint64max + 1}"}""")
+    validateRejects("""{"ulong":"-1"}""")
+
+    // sint32
+    validateAccepts(s"""{"sint":"${Integer.MAX_VALUE}"}""", IntFields(sint = Some(Integer.MAX_VALUE)))
+    validateAccepts(s"""{"sint":"${Integer.MIN_VALUE}"}""", IntFields(sint = Some(Integer.MIN_VALUE)))
+    validateRejects(s"""{"sint":"${Integer.MAX_VALUE.toLong + 1}"}""")
+    validateRejects(s"""{"sint":"${Integer.MIN_VALUE.toLong - 1}"}""")
+
+    // sint64
+    validateAccepts(s"""{"slong":"${Long.MaxValue}"}""", IntFields(slong = Some(Long.MaxValue)))
+    validateAccepts(s"""{"slong":"${Long.MinValue}"}""", IntFields(slong = Some(Long.MinValue)))
+    validateRejects(s"""{"slong":"${BigInt(Long.MaxValue) + 1}"}""")
+    validateRejects(s"""{"slong":"${BigInt(Long.MinValue) - 1}"}""")
+
+    // fixed32
+    validateAccepts(s"""{"fixint":"$uint32max"}""", IntFields(fixint = Some(uint32max.toInt)))
+    validateRejects(s"""{"fixint":"${uint32max + 1}"}""")
+    validateRejects("""{"fixint":"-1"}""")
+
+    // fixed64
+    validateAccepts(s"""{"fixlong":"$uint64max"}""", IntFields(fixlong = Some(uint64max.toLong)))
+    validateRejects(s"""{"fixlong":"${uint64max + 1}"}""")
+    validateRejects("""{"fixlong":"-1"}""")
+
   }
 
   "TestProto" should "parse an enum formatted as number" in {

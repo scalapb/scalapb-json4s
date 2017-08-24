@@ -2,6 +2,7 @@ package com.trueaccord.scalapb.json
 
 import com.fasterxml.jackson.core.Base64Variants
 import com.google.protobuf.ByteString
+import com.google.protobuf.descriptor.FieldDescriptorProto
 import com.google.protobuf.duration.Duration
 import com.google.protobuf.struct.NullValue
 import com.google.protobuf.timestamp.Timestamp
@@ -306,7 +307,7 @@ class Parser(
       })
     case ScalaType.Message(md) =>
       fromJsonToPMessage(containerCompanion.messageCompanionForFieldNumber(fd.number), value)
-    case st => JsonFormat.parsePrimitiveByScalaType(st, value,
+    case st => JsonFormat.parsePrimitive(st, fd.protoType, value,
       throw new JsonFormatException(
         s"Unexpected value ($value) for field ${serializedName(fd)} of ${fd.containingMessage.name}"))
   }
@@ -351,8 +352,8 @@ object JsonFormat {
 
   def primitiveWrapperParser[T <: GeneratedMessage with Message[T]](implicit cmp: GeneratedMessageCompanion[T]): ((Parser, JValue) => T) = {
     val fieldDesc = cmp.scalaDescriptor.findFieldByNumber(1).get
-    (parser, jv) => cmp.messageReads.read(PMessage(Map(fieldDesc -> JsonFormat.parsePrimitiveByScalaType(
-      fieldDesc.scalaType, jv, throw new JsonFormatException(s"Unexpected value for ${cmp.scalaDescriptor.name}")))))
+    (parser, jv) => cmp.messageReads.read(PMessage(Map(fieldDesc -> JsonFormat.parsePrimitive(
+      fieldDesc.scalaType, fieldDesc.protoType, jv, throw new JsonFormatException(s"Unexpected value for ${cmp.scalaDescriptor.name}")))))
   }
 
   val printer = new Printer()
@@ -396,14 +397,19 @@ object JsonFormat {
     }
   }
 
-  def parsePrimitiveByScalaType(scalaType: ScalaType, value: JValue, onError: => PValue): PValue = (scalaType, value) match {
+  def parsePrimitive(scalaType: ScalaType, protoType: FieldDescriptorProto.Type, value: JValue, onError: => PValue): PValue = (scalaType, value) match {
     case (ScalaType.Int, JInt(x)) => PInt(x.intValue)
     case (ScalaType.Int, JDouble(x)) => PInt(x.intValue)
     case (ScalaType.Int, JDecimal(x)) => PInt(x.intValue)
+    case (ScalaType.Int, JString(x)) if protoType.isTypeInt32 => parseInt32(x)
+    case (ScalaType.Int, JString(x)) if protoType.isTypeSint32 => parseInt32(x)
+    case (ScalaType.Int, JString(x)) => parseUint32(x)
     case (ScalaType.Int, JNull) => PInt(0)
     case (ScalaType.Long, JLong(x)) => PLong(x.toLong)
     case (ScalaType.Long, JDecimal(x)) => PLong(x.longValue())
-    case (ScalaType.Long, JString(x)) => parseLongFromString(x)
+    case (ScalaType.Long, JString(x)) if protoType.isTypeInt64 => parseInt64(x)
+    case (ScalaType.Long, JString(x)) if protoType.isTypeSint64 => parseInt64(x)
+    case (ScalaType.Long, JString(x)) => parseUint64(x)
     case (ScalaType.Long, JInt(x)) => PLong(x.toLong)
     case (ScalaType.Long, JNull) => PLong(0L)
     case (ScalaType.Double, JDouble(x)) => PDouble(x)
@@ -430,18 +436,69 @@ object JsonFormat {
     case _ => onError
   }
 
-  def parseLongFromString(value: String): PValue = {
+  def parseBigDecimal(value: String): BigDecimal = {
+    try {
+      // JSON doesn't distinguish between integer values and floating point values so "1" and
+      // "1.000" are treated as equal in JSON. For this reason we accept floating point values for
+      // integer fields as well as long as it actually is an integer (i.e., round(value) == value).
+      BigDecimal(value)
+    } catch { case e: Exception =>
+      throw JsonFormatException(s"Not a numeric value: $value", e)
+    }
+  }
+
+  def parseInt32(value: String): PValue = {
+    try {
+      PInt(value.toInt)
+    } catch { case _: Exception =>
+      try {
+        PInt(parseBigDecimal(value).toIntExact)
+      } catch { case e: Exception =>
+        throw JsonFormatException(s"Not an int32 value: $value", e)
+      }
+    }
+  }
+
+  def parseInt64(value: String): PValue = {
     try {
       PLong(value.toLong)
     } catch { case _: Exception =>
+      val bd = parseBigDecimal(value)
       try {
-        // JSON doesn't distinguish between integer values and floating point values so "1" and
-        // "1.000" are treated as equal in JSON. For this reason we accept floating point values for
-        // integer fields as well as long as it actually is an integer (i.e., round(value) == value).
-        PLong(BigDecimal(value).longValue())
+        PLong(bd.toLongExact)
       } catch { case e: Exception =>
         throw JsonFormatException(s"Not an int64 value: $value", e)
       }
+    }
+  }
+
+  def parseUint32(value: String): PValue = {
+    try {
+      val result = value.toLong
+      if (result < 0 || result > 0xFFFFFFFFl) throw new JsonFormatException(s"Out of range uint32 value: $value")
+      return PInt(result.toInt)
+    } catch {
+      case e: JsonFormatException => throw e
+      case e: Exception => // Fall through.
+    }
+    parseBigDecimal(value).toBigIntExact().map { intVal =>
+      if (intVal < 0 || intVal > 0xFFFFFFFFl) throw new JsonFormatException(s"Out of range uint32 value: $value")
+      PLong(intVal.intValue())
+    } getOrElse {
+      throw new JsonFormatException(s"Not an uint32 value: $value")
+    }
+  }
+
+  val MAX_UINT64 = BigInt("FFFFFFFFFFFFFFFF", 16)
+
+  def parseUint64(value: String): PValue = {
+    parseBigDecimal(value).toBigIntExact().map { intVal =>
+      if (intVal < 0 || intVal > MAX_UINT64) {
+        throw new JsonFormatException(s"Out of range uint64 value: $value")
+      }
+      PLong(intVal.longValue())
+    } getOrElse {
+      throw new JsonFormatException(s"Not an uint64 value: $value")
     }
   }
 

@@ -36,6 +36,18 @@ message MyTest {
   }
 
   map<fixed64, bytes> fixed64_to_bytes = 18;
+
+}
+
+message IntFields {
+  optional int32 int = 1;
+  optional int64 long = 2;
+  optional uint32 uint = 3;
+  optional uint64 ulong = 4;
+  optional sint32 sint = 5;
+  optional sint64 slong = 6;
+  optional fixed32 fixint = 7;
+  optional fixed64 fixlong = 8;
 }
 
 message WellKnownTest {
