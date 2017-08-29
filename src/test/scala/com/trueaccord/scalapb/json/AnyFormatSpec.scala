@@ -24,9 +24,10 @@ class AnyFormatSpec extends FlatSpec with MustMatchers with JavaAssertions {
     PBAny.pack(AnyTest("2"))
   ))
 
-  val ManyJson = parse(
+  val ManyPackedJson = parse(
     """
       |{
+      |  "@type": "type.googleapis.com/jsontest.ManyAnyTest",
       |  "fields": [
       |    {"@type": "type.googleapis.com/jsontest.AnyTest", "field": "1"},
       |    {"@type": "type.googleapis.com/jsontest.AnyTest", "field": "2"}
@@ -70,10 +71,10 @@ class AnyFormatSpec extends FlatSpec with MustMatchers with JavaAssertions {
 
   "Any" should "resolve printers recursively" in {
     val packed = PBAny.pack(ManyExample)
-    ScalaJsonPrinter.toJson(packed) must be(ManyJson)
+    ScalaJsonPrinter.toJson(packed) must be(ManyPackedJson)
   }
 
   "Any" should "resolve parsers recursively" in {
-    ScalaJsonParser.fromJson[PBAny](ManyJson).unpack[ManyAnyTest] must be(ManyExample)
+    ScalaJsonParser.fromJson[PBAny](ManyPackedJson).unpack[ManyAnyTest] must be(ManyExample)
   }
 }
