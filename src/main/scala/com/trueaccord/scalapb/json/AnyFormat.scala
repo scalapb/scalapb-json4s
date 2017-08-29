@@ -52,11 +52,11 @@ object AnyFormat {
         case JNothing =>
           throw new JsonFormatException("Object of type com.google.protobuf.any.Any missing @type field")
 
-        case _ =>
-          throw new JsonFormatException(s"Expected string @type field")
+        case unknown =>
+          throw new JsonFormatException(s"Expected string @type field, got $unknown")
       }
 
-    case _ =>
-      throw new JsonFormatException("Expected an object")
+    case (_, unknown) =>
+      throw new JsonFormatException(s"Expected an object, got $unknown")
   }
 }

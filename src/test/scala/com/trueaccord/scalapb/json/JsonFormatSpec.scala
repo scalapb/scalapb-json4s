@@ -8,6 +8,7 @@ import jsontest.test._
 import jsontest.test3._
 import com.google.protobuf.util.{JsonFormat => JavaJsonFormat}
 import com.google.protobuf.any.{Any => PBAny}
+import com.google.protobuf.util.JsonFormat.TypeRegistry
 
 class JsonFormatSpec extends FlatSpec with MustMatchers with OptionValues {
   val TestProto = MyTest().update(
@@ -285,7 +286,9 @@ class JsonFormatSpec extends FlatSpec with MustMatchers with OptionValues {
     (JsonFormat.toJson(out) \ "f") must be (JDouble(Double.NegativeInfinity))
   }
 
-  val anyEnabledFormatRegistry = JsonFormat.DefaultRegistry.registerCompanion(MyTest)
+  val anyEnabledTypeRegistry = TypeRegistry.newBuilder().add(TestProto.companion.javaDescriptor).build()
+  val anyEnabledJavaPrinter = JavaJsonFormat.printer().usingTypeRegistry(anyEnabledTypeRegistry)
+  val anyEnabledFormatRegistry = JsonFormat.DefaultRegistry.registerCompanion(TestProto.companion)
   val anyEnabledParser = new Parser(formatRegistry = anyEnabledFormatRegistry)
   val anyEnabledPrinter = new Printer(formatRegistry = anyEnabledFormatRegistry)
 
@@ -296,14 +299,13 @@ class JsonFormatSpec extends FlatSpec with MustMatchers with OptionValues {
   }
 
   "TestJsonWithType" should "be TestProto packed as any when parsed from JSON" in {
-    val out = anyEnabledParser.fromJson[PBAny](TestJsonWithType)
-    out must be (PBAny.pack(TestProto))
+    val out = anyEnabledParser.fromJson[PBAny](parse(TestJsonWithType))
+    out.unpack[MyTest] must be(TestProto)
   }
 
   "Any" should "parse JSON produced by Java for a packed TestProto" in {
-    val any = com.google.protobuf.Any.pack(MyTest.toJavaProto(TestProto))
-    val in = JavaJsonFormat.printer().print(any)
-
-    JsonFormat.fromJsonString[PBAny](in) must be (PBAny.pack(TestProto))
+    val javaAny = com.google.protobuf.Any.pack(MyTest.toJavaProto(TestProto))
+    val javaJson = anyEnabledJavaPrinter.print(javaAny)
+    anyEnabledParser.fromJsonString[PBAny](javaJson).unpack[MyTest] must be(TestProto)
   }
 }
