@@ -25,13 +25,13 @@ object AnyFormat {
     // Find the companion so it can be used to JSON-serialize the message. Perhaps this can be circumvented by
     // including the original GeneratedMessage with the Any (at least in memory).
     val cmp = findCompanionOf(any.typeUrl, printer.formatRegistry)
-      .getOrElse(throw new IllegalStateException(s"Cannot find companion for message of type ${any.typeUrl}"))
+      .getOrElse(throw new IllegalStateException(s"Unknown type ${any.typeUrl}; you may have to register it via FormatRegistry.registerCompanion"))
 
     // Unpack the message...
     val message = any.unpack(cmp)
 
     // ... and add the @type marker to the resulting JSON
-    JsonFormat.toJson(message) match {
+    printer.toJson(message) match {
       case JObject(fields) => JObject(("@type" -> JString(any.typeUrl)) +: fields)
       case value =>
         // Safety net, this shouldn't happen
@@ -44,13 +44,10 @@ object AnyFormat {
       obj \ "@type" match {
         case JString(typeUrl) =>
           val cmp = findCompanionOf(typeUrl, parser.formatRegistry)
-            .getOrElse(throw new JsonFormatException(s"Unknown type $typeUrl; you might have to register it via FormatRegistry.registerCompanion"))
+            .getOrElse(throw new JsonFormatException(s"Unknown type $typeUrl; you may have to register it via FormatRegistry.registerCompanion"))
           val tail = fields.filterNot(_._1 == "@type")
-          val message = JsonFormat.fromJson(JObject(tail))(cmp)
-          com.google.protobuf.any.Any(
-            typeUrl = typeUrl,
-            value = message.toByteString
-          )
+          val message = parser.fromJson(JObject(tail))(cmp)
+          PBAny(typeUrl = typeUrl, value = message.toByteString)
 
         case JNothing =>
           throw new JsonFormatException("Object of type com.google.protobuf.any.Any missing @type field")
