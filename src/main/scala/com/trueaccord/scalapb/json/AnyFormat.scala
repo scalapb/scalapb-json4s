@@ -9,9 +9,7 @@ import scala.language.existentials
 
 object AnyFormat {
 
-  val DefaultTypeUrlPrefix = "type.googleapis.com/"
-
-  private val PrefixedTypeUrl = (Regex.quote(DefaultTypeUrlPrefix) + "(.*)").r
+  private val PrefixedTypeUrl = """type\.googleapis\.com/(.*)""".r
 
   // TODO consider caching the results. If so, refactor away from a singleton (or key by FormatRegistry as well).
   private def findCompanionOf(typeUrl: String, formatRegistry: FormatRegistry): Option[GenericCompanion] =
