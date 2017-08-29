@@ -1,12 +1,14 @@
 package com.trueaccord.scalapb.json
 
-import org.json4s.{JValue, JInt, JDouble}
+import org.json4s.{JDouble, JValue}
 import org.json4s.jackson.JsonMethods._
 import org.json4s.JsonDSL._
 import org.scalatest.{FlatSpec, MustMatchers, OptionValues}
 import jsontest.test._
 import jsontest.test3._
 import com.google.protobuf.util.{JsonFormat => JavaJsonFormat}
+import com.google.protobuf.any.{Any => PBAny}
+import com.google.protobuf.util.JsonFormat.TypeRegistry
 
 class JsonFormatSpec extends FlatSpec with MustMatchers with OptionValues {
   val TestProto = MyTest().update(
@@ -27,6 +29,25 @@ class JsonFormatSpec extends FlatSpec with MustMatchers with OptionValues {
 
   val TestJson =
     """{
+      |  "hello": "Foo",
+      |  "foobar": 37,
+      |  "primitiveSequence": ["a", "b", "c"],
+      |  "repMessage": [{}, {"hello": "h11"}],
+      |  "optMessage": {"foobar": 39},
+      |  "stringToInt32": {"foo": 14, "bar": 19},
+      |  "intToMytest": {"14": {}, "35": {"hello": "boo"}},
+      |  "repEnum": ["V1", "V2", "UNKNOWN"],
+      |  "optEnum": "V2",
+      |  "intToEnum": {"32": "V1", "35": "V2"},
+      |  "stringToBool": {"ff": false, "tt": true},
+      |  "boolToString": {"false": "ff", "true": "tt"},
+      |  "optBool": false
+      |}
+      |""".stripMargin
+
+  val TestJsonWithType =
+    """{
+      |  "@type": "type.googleapis.com/jsontest.MyTest",
       |  "hello": "Foo",
       |  "foobar": 37,
       |  "primitiveSequence": ["a", "b", "c"],
@@ -263,5 +284,28 @@ class JsonFormatSpec extends FlatSpec with MustMatchers with OptionValues {
     out.f.value.isNegInfinity must be (true)
     (JsonFormat.toJson(out) \ "d") must be (JDouble(Double.NegativeInfinity))
     (JsonFormat.toJson(out) \ "f") must be (JDouble(Double.NegativeInfinity))
+  }
+
+  val anyEnabledTypeRegistry = TypeRegistry.newBuilder().add(TestProto.companion.javaDescriptor).build()
+  val anyEnabledJavaPrinter = JavaJsonFormat.printer().usingTypeRegistry(anyEnabledTypeRegistry)
+  val anyEnabledFormatRegistry = JsonFormat.DefaultRegistry.registerCompanion(TestProto.companion)
+  val anyEnabledParser = new Parser(formatRegistry = anyEnabledFormatRegistry)
+  val anyEnabledPrinter = new Printer(formatRegistry = anyEnabledFormatRegistry)
+
+  "TestProto packed as any" should "give TestJsonWithType after JSON serialization" in {
+    val any = PBAny.pack(TestProto)
+
+    anyEnabledPrinter.toJson(any) must be (parse(TestJsonWithType))
+  }
+
+  "TestJsonWithType" should "be TestProto packed as any when parsed from JSON" in {
+    val out = anyEnabledParser.fromJson[PBAny](parse(TestJsonWithType))
+    out.unpack[MyTest] must be(TestProto)
+  }
+
+  "Any" should "parse JSON produced by Java for a packed TestProto" in {
+    val javaAny = com.google.protobuf.Any.pack(MyTest.toJavaProto(TestProto))
+    val javaJson = anyEnabledJavaPrinter.print(javaAny)
+    anyEnabledParser.fromJsonString[PBAny](javaJson).unpack[MyTest] must be(TestProto)
   }
 }
