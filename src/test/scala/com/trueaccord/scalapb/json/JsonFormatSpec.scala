@@ -285,14 +285,18 @@ class JsonFormatSpec extends FlatSpec with MustMatchers with OptionValues {
     (JsonFormat.toJson(out) \ "f") must be (JDouble(Double.NegativeInfinity))
   }
 
+  val anyEnabledFormatRegistry = JsonFormat.DefaultRegistry.registerCompanion(MyTest)
+  val anyEnabledParser = new Parser(formatRegistry = anyEnabledFormatRegistry)
+  val anyEnabledPrinter = new Printer(formatRegistry = anyEnabledFormatRegistry)
+
   "TestProto packed as any" should "give TestJsonWithType after JSON serialization" in {
     val any = PBAny.pack(TestProto)
 
-    JsonFormat.toJson(any) must be (parse(TestJsonWithType))
+    anyEnabledPrinter.toJson(any) must be (parse(TestJsonWithType))
   }
 
   "TestJsonWithType" should "be TestProto packed as any when parsed from JSON" in {
-    val out = JsonFormat.fromJson[PBAny](TestJsonWithType)
+    val out = anyEnabledParser.fromJson[PBAny](TestJsonWithType)
     out must be (PBAny.pack(TestProto))
   }
 

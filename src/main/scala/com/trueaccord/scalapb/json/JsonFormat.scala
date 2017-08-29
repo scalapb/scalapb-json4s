@@ -284,7 +284,7 @@ class Parser(
 object JsonFormat {
   import com.google.protobuf.wrappers
 
-  type GenericCompanion = GeneratedMessageCompanion[T] forSome { type T <: GeneratedMessage with Message[T] }
+  type GenericCompanion = GeneratedMessageCompanion[T] with Singleton forSome { type T <: GeneratedMessage with Message[T] }
 
   val DefaultRegistry = FormatRegistry()
     .registerWriter((d: Duration) => JString(Durations.writeDuration(d)), jv => jv match {

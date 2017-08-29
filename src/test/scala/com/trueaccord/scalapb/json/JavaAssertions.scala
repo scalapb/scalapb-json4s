@@ -8,13 +8,14 @@ import org.scalatest.MustMatchers
 trait JavaAssertions {
   self: MustMatchers =>
 
-  def registeredCompanions: Seq[GenericCompanion] = Seq.empty
+  def registeredCompanions: Seq[GeneratedMessageCompanion[_]] = Seq.empty
 
   val JavaJsonTypeRegistry = registeredCompanions.foldLeft(TypeRegistry.newBuilder())(_ add _.javaDescriptor).build()
   val JavaJsonPrinter = com.google.protobuf.util.JsonFormat.printer().usingTypeRegistry(JavaJsonTypeRegistry)
   val JavaJsonParser = com.google.protobuf.util.JsonFormat.parser()
 
-  val ScalaFormatRegistry = JsonFormat.DefaultRegistry.registerCompanions(registeredCompanions)
+  val ScalaFormatRegistry =
+    JsonFormat.DefaultRegistry.registerCompanions(registeredCompanions.map(_.asInstanceOf[GenericCompanion]))
   val ScalaJsonParser = new Parser(formatRegistry = ScalaFormatRegistry)
   val ScalaJsonPrinter = new Printer(formatRegistry = ScalaFormatRegistry)
 

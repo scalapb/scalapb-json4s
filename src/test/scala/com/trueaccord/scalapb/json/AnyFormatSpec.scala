@@ -1,26 +1,40 @@
 package com.trueaccord.scalapb.json
 
 import com.google.protobuf.any.{Any => PBAny}
-import jsontest.issue315.{Bar, Foo}
+import com.trueaccord.scalapb.json.JsonFormat.GenericCompanion
+import jsontest.anytests.{AnyTest, ManyAnyTest}
 import org.scalatest.{FlatSpec, MustMatchers}
 import org.json4s.jackson.JsonMethods._
 
 class AnyFormatSpec extends FlatSpec with MustMatchers with JavaAssertions {
-  val FooExample = Foo("test")
+  val RawExample = AnyTest("test")
 
-  val FooJson = parse(s"""{"cols":"test"}""")
+  val RawJson = parse(s"""{"field":"test"}""")
 
-  val AnyExample = PBAny.pack(FooExample)
+  val AnyExample = PBAny.pack(RawExample)
 
-  val AnyJson = parse(s"""{"@type":"type.googleapis.com/jsontest.Foo","cols":"test"}""")
+  val AnyJson = parse(s"""{"@type":"type.googleapis.com/jsontest.AnyTest","field":"test"}""")
 
-  val BarExample = Bar("field1", "field2")
+  val CustomPrefixAny = PBAny.pack(RawExample, "example.com/")
 
-  val CustomPrefixAny = PBAny.pack(FooExample, "example.com/")
+  val CustomPrefixJson = parse(s"""{"@type":"example.com/jsontest.AnyTest","field":"test"}""")
 
-  val CustomPrefixJson = parse(s"""{"@type":"example.com/jsontest.Foo","cols":"test"}""")
+  val ManyExample = ManyAnyTest(Seq(
+    PBAny.pack(AnyTest("1")),
+    PBAny.pack(AnyTest("2"))
+  ))
 
-  override def registeredCompanions = Seq(Foo)
+  val ManyJson = parse(
+    """
+      |{
+      |  "fields": [
+      |    {"@type": "type.googleapis.com/jsontest.AnyTest", "field": "1"},
+      |    {"@type": "type.googleapis.com/jsontest.AnyTest", "field": "2"}
+      |  ]
+      |}
+    """.stripMargin)
+
+  override def registeredCompanions = Seq(AnyTest, ManyAnyTest)
 
   // For clarity
   def UnregisteredPrinter = JsonFormat.printer
@@ -52,5 +66,14 @@ class AnyFormatSpec extends FlatSpec with MustMatchers with JavaAssertions {
 
   "Any" should "be serialized the same as in Java (and parsed back to original)" in {
     assertJsonIsSameAsJava(AnyExample)
+  }
+
+  "Any" should "resolve printers recursively" in {
+    val packed = PBAny.pack(ManyExample)
+    ScalaJsonPrinter.toJson(packed) must be(ManyJson)
+  }
+
+  "Any" should "resolve parsers recursively" in {
+    ScalaJsonParser.fromJson[PBAny](ManyJson).unpack[ManyAnyTest] must be(ManyExample)
   }
 }
