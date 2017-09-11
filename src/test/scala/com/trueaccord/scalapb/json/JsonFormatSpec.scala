@@ -11,6 +11,7 @@ import com.google.protobuf.any.{Any => PBAny}
 import com.google.protobuf.util.JsonFormat.{TypeRegistry => JavaTypeRegistry}
 
 class JsonFormatSpec extends FlatSpec with MustMatchers with OptionValues {
+
   val TestProto = MyTest().update(
     _.hello := "Foo",
     _.foobar := 37,
@@ -298,6 +299,19 @@ class JsonFormatSpec extends FlatSpec with MustMatchers with OptionValues {
 
   }
 
+  "TestProto" should "produce valid JSON output for unsigned integers" in {
+    val uint32max: Long = (1L << 32) - 1
+    JsonFormat.toJson(IntFields(uint = Some(uint32max.toInt))) must be(parse(s"""{"uint":$uint32max}"""))
+    JsonFormat.toJson(IntFields(uint = Some(1))) must be(parse(s"""{"uint":1}"""))
+    JsonFormat.toJson(IntFields(fixint = Some(uint32max.toInt))) must be(parse(s"""{"fixint":$uint32max}"""))
+    JsonFormat.toJson(IntFields(fixint = Some(1))) must be(parse(s"""{"fixint":1}"""))
+    val uint64max: BigInt = (BigInt(1) << 64) - 1
+    JsonFormat.toJson(IntFields(ulong = Some(uint64max.toLong))) must be(parse(s"""{"ulong":"$uint64max"}"""))
+    JsonFormat.toJson(IntFields(ulong = Some(1))) must be(parse(s"""{"ulong":"1"}"""))
+    JsonFormat.toJson(IntFields(fixlong = Some(uint64max.toLong))) must be(parse(s"""{"fixlong":"$uint64max"}"""))
+    JsonFormat.toJson(IntFields(fixlong = Some(1))) must be(parse(s"""{"fixlong":"1"}"""))
+  }
+
   "TestProto" should "parse an enum formatted as number" in {
     new Parser().fromJsonString[MyTest]("""{"optEnum":1}""") must be(MyTest(optEnum = Some(MyEnum.V1)))
     new Parser().fromJsonString[MyTest]("""{"optEnum":2}""") must be(MyTest(optEnum = Some(MyEnum.V2)))
@@ -365,4 +379,5 @@ class JsonFormatSpec extends FlatSpec with MustMatchers with OptionValues {
     val javaJson = anyEnabledJavaPrinter.print(javaAny)
     anyEnabledParser.fromJsonString[PBAny](javaJson).unpack[MyTest] must be(TestProto)
   }
+  
 }

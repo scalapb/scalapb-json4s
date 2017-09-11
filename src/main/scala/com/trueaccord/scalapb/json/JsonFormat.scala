@@ -198,14 +198,25 @@ class Printer(
   private def defaultJValue(fd: FieldDescriptor): JValue = serializeSingleValue(
     fd, JsonFormat.defaultValue(fd), formattingLongAsNumber)
 
+  private def unsignedInt(n: Int): Long = n & 0x00000000FFFFFFFFL
+  private def unsignedLong(n: Long): BigInt =
+    if (n < 0) BigInt(n & 0x7FFFFFFFFFFFFFFFL).setBit(63) else BigInt(n)
+
+  private def formatLong(n: Long, protoType: FieldDescriptorProto.Type, formattingLongAsNumber: Boolean): JValue = {
+    val v: BigInt = if (protoType.isTypeUint64 || protoType.isTypeFixed64) unsignedLong(n) else BigInt(n)
+    if (formattingLongAsNumber) JInt(v) else JString(v.toString())
+  }
+
   def serializeSingleValue(fd: FieldDescriptor, value: PValue, formattingLongAsNumber: Boolean): JValue = value match {
     case PEnum(e) =>
       formatRegistry.getEnumWriter(e.containingEnum) match {
         case Some(writer) => writer(this, e)
         case None => JString(e.name)
       }
+    case PInt(v) if fd.protoType.isTypeUint32 => JInt(unsignedInt(v))
+    case PInt(v) if fd.protoType.isTypeFixed32 => JInt(unsignedInt(v))
     case PInt(v) => JInt(v)
-    case PLong(v) => if (formattingLongAsNumber) JLong(v) else JString(v.toString)
+    case PLong(v) => formatLong(v, fd.protoType, formattingLongAsNumber)
     case PDouble(v) => JDouble(v)
     case PFloat(v) => JDouble(v)
     case PBoolean(v) => JBool(v)
