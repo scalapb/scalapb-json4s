@@ -162,8 +162,18 @@ class JsonFormatSpec extends FlatSpec with MustMatchers with OptionValues {
       jsontest.issue315.Msg(baz="1", someUnion=jsontest.issue315.Msg.SomeUnion.Foo(jsontest.issue315.Foo(cols="1"))))
   }
 
+  "parsing null" should "give default value" in {
+    JsonFormat.fromJsonString[jsontest.test.MyTest]("""
+    {
+          "optMessage" : null,
+          "optBool": null,
+          "optEnum": null,
+          "repEnum": null
+    }""") must be(
+      jsontest.test.MyTest())
+  }
+
   "TestProto" should "be TestJson when converted to Proto" in {
-    println("---------------------------")
     JsonFormat.toJson(TestProto) must be (parse(TestJson))
   }
 

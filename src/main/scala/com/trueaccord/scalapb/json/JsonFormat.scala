@@ -291,7 +291,7 @@ class Parser(
 
             val valueMap: Map[FieldDescriptor, PValue] = (for {
               fd <- cmp.scalaDescriptor.fields
-              jsValue <- values.get(serializedName(fd))
+              jsValue <- values.get(serializedName(fd)) if jsValue != JNull
             } yield (fd, parseValue(fd, jsValue))).toMap
 
             PMessage(valueMap)
@@ -415,35 +415,28 @@ object JsonFormat {
     case (ScalaType.Int, JString(x)) if protoType.isTypeInt32 => parseInt32(x)
     case (ScalaType.Int, JString(x)) if protoType.isTypeSint32 => parseInt32(x)
     case (ScalaType.Int, JString(x)) => parseUint32(x)
-    case (ScalaType.Int, JNull) => PInt(0)
     case (ScalaType.Long, JLong(x)) => PLong(x.toLong)
     case (ScalaType.Long, JDecimal(x)) => PLong(x.longValue())
     case (ScalaType.Long, JString(x)) if protoType.isTypeInt64 => parseInt64(x)
     case (ScalaType.Long, JString(x)) if protoType.isTypeSint64 => parseInt64(x)
     case (ScalaType.Long, JString(x)) => parseUint64(x)
     case (ScalaType.Long, JInt(x)) => PLong(x.toLong)
-    case (ScalaType.Long, JNull) => PLong(0L)
     case (ScalaType.Double, JDouble(x)) => PDouble(x)
     case (ScalaType.Double, JInt(x)) => PDouble(x.toDouble)
     case (ScalaType.Double, JDecimal(x)) => PDouble(x.toDouble)
     case (ScalaType.Double, JString("NaN")) => PDouble(Double.NaN)
     case (ScalaType.Double, JString("Infinity")) => PDouble(Double.PositiveInfinity)
     case (ScalaType.Double, JString("-Infinity")) => PDouble(Double.NegativeInfinity)
-    case (ScalaType.Double, JNull) => PDouble(0.toDouble)
     case (ScalaType.Float, JDouble(x)) => PFloat(x.toFloat)
     case (ScalaType.Float, JInt(x)) => PFloat(x.toFloat)
     case (ScalaType.Float, JDecimal(x)) => PFloat(x.toFloat)
     case (ScalaType.Float, JString("NaN")) => PFloat(Float.NaN)
     case (ScalaType.Float, JString("Infinity")) => PFloat(Float.PositiveInfinity)
     case (ScalaType.Float, JString("-Infinity")) => PFloat(Float.NegativeInfinity)
-    case (ScalaType.Float, JNull) => PFloat(0.toFloat)
     case (ScalaType.Boolean, JBool(b)) => PBoolean(b)
-    case (ScalaType.Boolean, JNull) => PBoolean(false)
     case (ScalaType.String, JString(s)) => PString(s)
-    case (ScalaType.String, JNull) => PString("")
     case (ScalaType.ByteString, JString(s)) =>
       PByteString(ByteString.copyFrom(Base64Variants.getDefaultVariant.decode(s)))
-    case (ScalaType.ByteString, JNull) => PByteString(ByteString.EMPTY)
     case _ => onError
   }
 
