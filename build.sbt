@@ -39,8 +39,8 @@ libraryDependencies ++= Seq(
   "com.trueaccord.scalapb" %% "scalapb-runtime" % scalapbVersion,
   "org.json4s" %% "json4s-jackson" % "3.5.1",
   "org.scalatest" %% "scalatest" % "3.0.1" % "test",
-  "com.google.protobuf" % "protobuf-java-util" % "3.2.0" % "test",
-  "com.google.protobuf" % "protobuf-java" % "3.2.0" % "protobuf"
+  "com.google.protobuf" % "protobuf-java-util" % "3.4.0" % "test",
+  "com.google.protobuf" % "protobuf-java" % "3.4.0" % "protobuf"
 )
 
 lazy val Proto26Test = config("proto26") extend(Test)
