@@ -1,4 +1,4 @@
-package com.trueaccord.scalapb.json
+package scalapb.json4s
 
 import com.google.protobuf.struct.Value.Kind
 import org.json4s.JsonAST._

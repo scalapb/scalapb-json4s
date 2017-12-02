@@ -1,4 +1,4 @@
-package com.trueaccord.scalapb.json
+package scalapb.json4s
 
 object NameUtils {
   def snakeCaseToCamelCase(name: String, upperInitial: Boolean = false): String = {

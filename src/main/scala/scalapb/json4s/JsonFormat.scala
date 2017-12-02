@@ -1,4 +1,4 @@
-package com.trueaccord.scalapb.json
+package scalapb.json4s
 
 import com.fasterxml.jackson.core.Base64Variants
 import com.google.protobuf.ByteString
@@ -6,8 +6,8 @@ import com.google.protobuf.descriptor.FieldDescriptorProto
 import com.google.protobuf.duration.Duration
 import com.google.protobuf.struct.NullValue
 import com.google.protobuf.timestamp.Timestamp
-import com.trueaccord.scalapb.json.JsonFormat.GenericCompanion
-import com.trueaccord.scalapb._
+import scalapb.json4s.JsonFormat.GenericCompanion
+import scalapb._
 import org.json4s.JsonAST._
 import org.json4s.{Reader, Writer}
 

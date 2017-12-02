@@ -1,4 +1,4 @@
-package com.trueaccord.scalapb.json
+package scalapb.json4s
 
 import java.text.SimpleDateFormat
 import java.util.{Date, GregorianCalendar, TimeZone}
