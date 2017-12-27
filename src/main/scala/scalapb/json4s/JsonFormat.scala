@@ -122,7 +122,7 @@ class Printer(
         if (includingDefaultValueFields) {
           b += JField(name, if (fd.isMapField) JObject() else JArray(Nil))
         }
-      case xs: Seq[GeneratedMessage] @unchecked =>
+      case xs: Iterable[GeneratedMessage] @unchecked =>
         if (fd.isMapField) {
           val mapEntryDescriptor = fd.scalaType.asInstanceOf[ScalaType.Message].descriptor
           val keyDescriptor = mapEntryDescriptor.findFieldByNumber(1).get
@@ -145,7 +145,7 @@ class Printer(
                   serializeSingleValue(valueDescriptor, x.getField(valueDescriptor), formattingLongAsNumber)
                 }
                 key -> value
-            }: _*))
+            }.toSeq: _*))
         } else {
           b += JField(name, JArray(xs.map(toJson).toList))
         }
