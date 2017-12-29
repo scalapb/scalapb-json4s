@@ -391,11 +391,19 @@ class JsonFormatSpec extends FlatSpec with MustMatchers with OptionValues {
     anyEnabledParser.fromJsonString[PBAny](javaJson).unpack[MyTest] must be(TestProto)
   }
 
-  "Custom Collection Type" should "parse JSON correctly" in {
+  "toJsonString" should "generate correct JSON for messages with custom collection type" in {
     val studio = Studio().addGuitars(Guitar(numberOfStrings = 12))
     val expectedStudioJsonString = """{"guitars":[{"numberOfStrings":12}]}"""
     val studioJsonString = JsonFormat.toJsonString(studio)
     studioJsonString must be(expectedStudioJsonString)
+  }
+
+  "fromJsonString" should "parse JSON correctly to message with custom collection type" in {
+    val expectedStudio = Studio().addGuitars(Guitar(numberOfStrings = 12))
+    val studioJsonString = """{"guitars":[{"numberOfStrings":12}]}"""
+    import Studio.messageCompanion
+    val studio = JsonFormat.fromJsonString(studioJsonString)
+    studio must be(expectedStudio)
   }
   
 }
