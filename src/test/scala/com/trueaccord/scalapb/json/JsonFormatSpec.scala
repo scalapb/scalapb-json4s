@@ -9,6 +9,7 @@ import jsontest.test3._
 import com.google.protobuf.util.{JsonFormat => JavaJsonFormat}
 import com.google.protobuf.any.{Any => PBAny}
 import com.google.protobuf.util.JsonFormat.{TypeRegistry => JavaTypeRegistry}
+import jsontest.custom_collection.{Guitar, Studio}
 
 class JsonFormatSpec extends FlatSpec with MustMatchers with OptionValues {
 
@@ -388,6 +389,13 @@ class JsonFormatSpec extends FlatSpec with MustMatchers with OptionValues {
     val javaAny = com.google.protobuf.Any.pack(MyTest.toJavaProto(TestProto))
     val javaJson = anyEnabledJavaPrinter.print(javaAny)
     anyEnabledParser.fromJsonString[PBAny](javaJson).unpack[MyTest] must be(TestProto)
+  }
+
+  "Custom Collection Type" should "parse JSON correctly" in {
+    val studio = Studio().addGuitars(Guitar(numberOfStrings = 12))
+    val expectedStudioJsonString = """{"guitars":[{"numberOfStrings":12}]}"""
+    val studioJsonString = JsonFormat.toJsonString(studio)
+    studioJsonString must be(expectedStudioJsonString)
   }
   
 }
