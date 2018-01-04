@@ -37,7 +37,7 @@ object Timestamps {
     ts
   }
 
-  def formatNanos(nanos: Int) = {
+  def formatNanos(nanos: Int): String = {
     // Determine whether to use 3, 6, or 9 digits for the nano part.
     if (nanos % NANOS_PER_MILLISECOND == 0) {
       "%1$03d".format(nanos / NANOS_PER_MILLISECOND)
