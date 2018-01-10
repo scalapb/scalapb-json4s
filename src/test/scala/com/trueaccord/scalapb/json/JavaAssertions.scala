@@ -19,7 +19,7 @@ trait JavaAssertions {
   val ScalaJsonParser = new Parser(typeRegistry = ScalaTypeRegistry)
   val ScalaJsonPrinter = new Printer(typeRegistry = ScalaTypeRegistry)
 
-  def assertJsonIsSameAsJava[T <: GeneratedMessage with Message[T]](v: T)(
+  def assertJsonIsSameAsJava[T <: GeneratedMessage with Message[T]](v: T, checkRoundtrip: Boolean = true)(
     implicit cmp: GeneratedMessageCompanion[T]) = {
     val scalaJson = ScalaJsonPrinter.print(v)
     val javaJson = JavaJsonPrinter.print(
@@ -27,7 +27,9 @@ trait JavaAssertions {
 
     import org.json4s.jackson.JsonMethods._
     parse(scalaJson) must be (parse(javaJson))
-    ScalaJsonParser.fromJsonString[T](scalaJson) must be(v)
+    if(checkRoundtrip) {
+      ScalaJsonParser.fromJsonString[T](scalaJson) must be(v)
+    }
   }
 
   def javaParse[T <: com.google.protobuf.GeneratedMessageV3.Builder[T]](json: String, b: com.google.protobuf.GeneratedMessageV3.Builder[T]) = {
