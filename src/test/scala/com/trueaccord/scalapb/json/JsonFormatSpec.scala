@@ -405,5 +405,10 @@ class JsonFormatSpec extends FlatSpec with MustMatchers with OptionValues {
     val studio = JsonFormat.fromJsonString(studioJsonString)
     studio must be(expectedStudio)
   }
+
+  "formatEnumAsNumber" should "format enums as number" in {
+    val p = MyTest().update(_.optEnum := MyEnum.V2)
+    new Printer(formattingEnumsAsNumber = true).toJson(p) must be(parse(s"""{"optEnum":2}"""))
+  }
   
 }

@@ -102,6 +102,7 @@ class Printer(
   includingDefaultValueFields: Boolean = false,
   preservingProtoFieldNames: Boolean = false,
   formattingLongAsNumber: Boolean = false,
+  formattingEnumsAsNumber: Boolean = false,
   formatRegistry: FormatRegistry = JsonFormat.DefaultRegistry,
   val typeRegistry: TypeRegistry = TypeRegistry.empty) {
   def print[A](m: GeneratedMessage): String = {
@@ -211,7 +212,7 @@ class Printer(
     case PEnum(e) =>
       formatRegistry.getEnumWriter(e.containingEnum) match {
         case Some(writer) => writer(this, e)
-        case None => JString(e.name)
+        case None => if (formattingEnumsAsNumber) JInt(e.number) else JString(e.name)
       }
     case PInt(v) if fd.protoType.isTypeUint32 => JInt(unsignedInt(v))
     case PInt(v) if fd.protoType.isTypeFixed32 => JInt(unsignedInt(v))
