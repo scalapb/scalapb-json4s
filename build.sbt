@@ -1,9 +1,9 @@
 import ReleaseTransformations._
 import scalapb.compiler.Version.scalapbVersion
 
-scalaVersion := "2.11.8"
+scalaVersion := "2.11.12"
 
-crossScalaVersions := Seq("2.10.6", "2.11.8", "2.12.1")
+crossScalaVersions := Seq("2.10.7", "2.11.12", "2.12.4")
 
 organization in ThisBuild := "com.thesamet.scalapb"
 
