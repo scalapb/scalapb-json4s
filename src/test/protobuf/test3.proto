@@ -7,6 +7,12 @@ import "google/protobuf/struct.proto";
 import "google/protobuf/wrappers.proto";
 
 message MyTest3 {
+  enum MyEnum3 {
+    UNKNOWN = 0;
+    V1 = 1;
+    V2 = 2;
+  }
+
   string s = 1;
   int32 i32 = 2;
   float f = 3;
@@ -19,6 +25,10 @@ message MyTest3 {
     int32 trick = 16;
     MyTest3 treat = 17;
   }
+
+  repeated MyEnum3 rep_enum = 9;
+  MyEnum3 opt_enum = 10;
+  map<int32, MyEnum3> int_to_enum = 11;
 }
 
 message Wrapper {
