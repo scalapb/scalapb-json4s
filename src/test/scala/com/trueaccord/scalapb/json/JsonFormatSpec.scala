@@ -220,7 +220,6 @@ class JsonFormatSpec extends FlatSpec with MustMatchers with OptionValues {
           |  "stringToBool": {},
           |  "optBs": "",
           |  "optBool": false,
-          |  "trick": 0,
           |  "fixed64ToBytes": {}
           |}""".stripMargin)
     )
@@ -244,7 +243,6 @@ class JsonFormatSpec extends FlatSpec with MustMatchers with OptionValues {
           |  "string_to_bool": {},
           |  "opt_bs": "",
           |  "opt_bool": false,
-          |  "trick": 0,
           |  "fixed64_to_bytes": {}
           |}""".stripMargin)
     )

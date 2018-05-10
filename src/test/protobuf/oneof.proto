@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package jsontest;
+
+message OneOf {
+    oneof field {
+        string primitive = 1;
+    }
+}
