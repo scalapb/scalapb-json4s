@@ -170,7 +170,8 @@ class Printer(
         if (includingDefaultValueFields ||
           !fd.isOptional ||
           !fd.file.isProto3 ||
-          (v != JsonFormat.defaultValue(fd))) {
+          (v != JsonFormat.defaultValue(fd)) ||
+          oneofs.contains(fd.number)) {
           b += JField(name, serializeSingleValue(fd, v, formattingLongAsNumber))
         }
     }
