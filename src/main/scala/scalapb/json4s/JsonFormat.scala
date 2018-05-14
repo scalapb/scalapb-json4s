@@ -157,9 +157,9 @@ class Printer(
     }
   }
 
-  private def serializeNonMessageField(fd: FieldDescriptor, name: String, value: PValue, b: FieldBuilder, oneofs: Set[Int]) = {
+  private def serializeNonMessageField(fd: FieldDescriptor, name: String, value: PValue, b: FieldBuilder) = {
     value match {
-      case PEmpty => if (includingDefaultValueFields && !oneofs.contains(fd.number)) {
+      case PEmpty => if (includingDefaultValueFields && fd.containingOneof.isEmpty) {
         b += JField(name, defaultJValue(fd))
       }
       case PRepeated(xs) =>
@@ -171,7 +171,7 @@ class Printer(
           !fd.isOptional ||
           !fd.file.isProto3 ||
           (v != JsonFormat.defaultValue(fd)) ||
-          oneofs.contains(fd.number)) {
+          fd.containingOneof.isDefined) {
           b += JField(name, serializeSingleValue(fd, v, formattingLongAsNumber))
         }
     }
@@ -183,7 +183,6 @@ class Printer(
       case None =>
         val b = List.newBuilder[JField]
         val descriptor = m.companion.scalaDescriptor
-        val oneofs = descriptor.oneofs.flatMap(_.fields).map(_.number).toSet
         b.sizeHint(descriptor.fields.size)
         descriptor.fields.foreach {
           f =>
@@ -191,7 +190,7 @@ class Printer(
             if (f.protoType.isTypeMessage) {
               serializeMessageField(f, name, m.getFieldByNumber(f.number), b)
             } else {
-              serializeNonMessageField(f, name, m.getField(f), b, oneofs)
+              serializeNonMessageField(f, name, m.getField(f), b)
             }
         }
         JObject(b.result())
