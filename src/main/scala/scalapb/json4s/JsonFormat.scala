@@ -159,7 +159,7 @@ class Printer(
 
   private def serializeNonMessageField(fd: FieldDescriptor, name: String, value: PValue, b: FieldBuilder) = {
     value match {
-      case PEmpty => if (includingDefaultValueFields) {
+      case PEmpty => if (includingDefaultValueFields && fd.containingOneof.isEmpty) {
         b += JField(name, defaultJValue(fd))
       }
       case PRepeated(xs) =>
@@ -170,7 +170,8 @@ class Printer(
         if (includingDefaultValueFields ||
           !fd.isOptional ||
           !fd.file.isProto3 ||
-          (v != JsonFormat.defaultValue(fd))) {
+          (v != JsonFormat.defaultValue(fd)) ||
+          fd.containingOneof.isDefined) {
           b += JField(name, serializeSingleValue(fd, v, formattingLongAsNumber))
         }
     }
