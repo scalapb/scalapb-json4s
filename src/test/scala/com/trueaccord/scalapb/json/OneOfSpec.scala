@@ -2,6 +2,8 @@ package com.trueaccord.scalapb.json
 
 import com.google.protobuf.util.JsonFormat.{printer => ProtobufJavaPrinter}
 import jsontest.oneof.OneOf._
+import jsontest.oneof.{Dictionary,Pair}
+import jsontest.oneof.Pair.ValueByType._
 import jsontest.oneof.{OneOf, OneOfMessage}
 import org.json4s.jackson.JsonMethods.parse
 import org.scalatest.prop._
@@ -33,4 +35,13 @@ class OneOfSpec extends FlatSpec with MustMatchers with TableDrivenPropertyCheck
     ))
   }
 
+  "dictionary test" should "preserve zero values in one of" in {
+    val message = Dictionary(Seq(Pair("myKey", Uint32Value(0))))
+
+    new Printer(includingDefaultValueFields = false).toJson(message) must be(
+        parse("""{"pairs":[{"key": "myKey", "uint32Value": 0}]}"""))
+
+    new Printer(includingDefaultValueFields = true).toJson(message) must be(
+        parse("""{"pairs":[{"key": "myKey", "uint32Value": 0}]}"""))
+  }
 }
