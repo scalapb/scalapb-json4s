@@ -24,13 +24,13 @@ class OneOfSpec extends FlatSpec with MustMatchers with TableDrivenPropertyCheck
   )
 
   forEvery(examples) { (message: OneOf, json: String) =>
-    new Printer(includingDefaultValueFields = false).toJson(message) must be(parse(json))
-    new Printer(includingDefaultValueFields = false).toJson(message) must be(parse(
+    new Printer(isIncludingDefaultValueFields = false).toJson(message) must be(parse(json))
+    new Printer(isIncludingDefaultValueFields = false).toJson(message) must be(parse(
       ProtobufJavaPrinter().print(toJavaProto(message))
     ))
 
-    new Printer(includingDefaultValueFields = true).toJson(message) must be(parse(json))
-    new Printer(includingDefaultValueFields = true).toJson(message) must be(parse(
+    new Printer(isIncludingDefaultValueFields = true).toJson(message) must be(parse(json))
+    new Printer(isIncludingDefaultValueFields = true).toJson(message) must be(parse(
       ProtobufJavaPrinter().includingDefaultValueFields().print(toJavaProto(message))
     ))
   }
@@ -38,10 +38,10 @@ class OneOfSpec extends FlatSpec with MustMatchers with TableDrivenPropertyCheck
   "dictionary test" should "preserve zero values in one of" in {
     val message = Dictionary(Seq(Pair("myKey", Uint32Value(0))))
 
-    new Printer(includingDefaultValueFields = false).toJson(message) must be(
+    new Printer(isIncludingDefaultValueFields = false).toJson(message) must be(
         parse("""{"pairs":[{"key": "myKey", "uint32Value": 0}]}"""))
 
-    new Printer(includingDefaultValueFields = true).toJson(message) must be(
+    new Printer(isIncludingDefaultValueFields = true).toJson(message) must be(
         parse("""{"pairs":[{"key": "myKey", "uint32Value": 0}]}"""))
   }
 }

@@ -1,8 +1,8 @@
 package com.trueaccord.scalapb.json
 
 import com.google.protobuf.util.JsonFormat.{TypeRegistry => JavaTypeRegistry}
-import com.trueaccord.scalapb.json.JsonFormat.GenericCompanion
-import com.trueaccord.scalapb.{GeneratedMessage, GeneratedMessageCompanion, JavaProtoSupport, Message}
+import scalapb.json4s.JsonFormat.GenericCompanion
+import scalapb.{GeneratedMessage, GeneratedMessageCompanion, JavaProtoSupport, Message}
 import org.scalatest.MustMatchers
 import scala.language.existentials
 

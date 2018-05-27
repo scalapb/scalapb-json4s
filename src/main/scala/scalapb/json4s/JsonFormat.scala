@@ -97,14 +97,63 @@ object TypeRegistry {
   def empty = TypeRegistry(Map.empty)
 }
 
+object Printer {
+  private final case class PrinterConfig(
+    isIncludingDefaultValueFields: Boolean,
+    isPreservingProtoFieldNames: Boolean,
+    isFormattingLongAsNumber: Boolean,
+    isFormattingEnumsAsNumber: Boolean,
+    formatRegistry: FormatRegistry,
+    typeRegistry: TypeRegistry
+  )
 
-class Printer(
-  includingDefaultValueFields: Boolean = false,
-  preservingProtoFieldNames: Boolean = false,
-  formattingLongAsNumber: Boolean = false,
-  formattingEnumsAsNumber: Boolean = false,
-  formatRegistry: FormatRegistry = JsonFormat.DefaultRegistry,
-  val typeRegistry: TypeRegistry = TypeRegistry.empty) {
+  private def defaultConfig = PrinterConfig(
+    isIncludingDefaultValueFields = false,
+    isPreservingProtoFieldNames = false,
+    isFormattingLongAsNumber = false,
+    isFormattingEnumsAsNumber = false,
+    formatRegistry = JsonFormat.DefaultRegistry,
+    typeRegistry = TypeRegistry.empty
+  )
+}
+
+class Printer private(config: Printer.PrinterConfig) {
+  def this() = this(Printer.defaultConfig)
+
+  @deprecated("Use new Printer() and chain includingDefaultValueFields, preservingProtoFieldNames, etc.", "0.7.2")
+  def this(
+    isIncludingDefaultValueFields: Boolean = false,
+    isPreservingProtoFieldNames: Boolean = false,
+    isFormattingLongAsNumber: Boolean = false,
+    isFormattingEnumsAsNumber: Boolean = false,
+    formatRegistry: FormatRegistry = JsonFormat.DefaultRegistry,
+    typeRegistry: TypeRegistry = TypeRegistry.empty) = this(
+      Printer.PrinterConfig(
+        isIncludingDefaultValueFields = isIncludingDefaultValueFields,
+        isPreservingProtoFieldNames = isPreservingProtoFieldNames,
+        isFormattingLongAsNumber = isFormattingLongAsNumber,
+        isFormattingEnumsAsNumber = isFormattingEnumsAsNumber,
+        formatRegistry = formatRegistry,
+        typeRegistry = typeRegistry
+      )
+  )
+
+  def includingDefaultValueFields: Printer = new Printer(config.copy(isIncludingDefaultValueFields = true))
+
+  def preservingProtoFieldNames: Printer = new Printer(config.copy(isPreservingProtoFieldNames = true))
+
+  def formattingLongAsNumber: Printer = new Printer(config.copy(isFormattingLongAsNumber = true))
+
+  def formattingEnumsAsNumber: Printer = new Printer(config.copy(isFormattingEnumsAsNumber = true))
+
+  def withFormatRegistry(formatRegistry: FormatRegistry): Printer =
+    new Printer(config.copy(formatRegistry = formatRegistry))
+
+  def withTypeRegistry(typeRegistry: TypeRegistry): Printer =
+    new Printer(config.copy(typeRegistry = typeRegistry))
+
+  def typeRegistry: TypeRegistry = config.typeRegistry
+
   def print[A](m: GeneratedMessage): String = {
     import org.json4s.jackson.JsonMethods._
     compact(toJson(m))
@@ -120,7 +169,7 @@ class Printer(
       case null =>
       // We are never printing empty optional messages to prevent infinite recursion.
       case Nil =>
-        if (includingDefaultValueFields) {
+        if (config.isIncludingDefaultValueFields) {
           b += JField(name, if (fd.isMapField) JObject() else JArray(Nil))
         }
       case xs: Iterable[GeneratedMessage] @unchecked =>
@@ -143,7 +192,7 @@ class Printer(
                 val value = if (valueDescriptor.protoType.isTypeMessage) {
                   toJson(x.getFieldByNumber(valueDescriptor.number).asInstanceOf[GeneratedMessage])
                 } else {
-                  serializeSingleValue(valueDescriptor, x.getField(valueDescriptor), formattingLongAsNumber)
+                  serializeSingleValue(valueDescriptor, x.getField(valueDescriptor), config.isFormattingLongAsNumber)
                 }
                 key -> value
             }.toSeq: _*))
@@ -159,26 +208,26 @@ class Printer(
 
   private def serializeNonMessageField(fd: FieldDescriptor, name: String, value: PValue, b: FieldBuilder) = {
     value match {
-      case PEmpty => if (includingDefaultValueFields && fd.containingOneof.isEmpty) {
+      case PEmpty => if (config.isIncludingDefaultValueFields && fd.containingOneof.isEmpty) {
         b += JField(name, defaultJValue(fd))
       }
       case PRepeated(xs) =>
-        if (xs.nonEmpty || includingDefaultValueFields) {
-          b += JField(name, JArray(xs.map(serializeSingleValue(fd, _, formattingLongAsNumber)).toList))
+        if (xs.nonEmpty || config.isIncludingDefaultValueFields) {
+          b += JField(name, JArray(xs.map(serializeSingleValue(fd, _, config.isFormattingLongAsNumber)).toList))
         }
       case v =>
-        if (includingDefaultValueFields ||
+        if (config.isIncludingDefaultValueFields ||
           !fd.isOptional ||
           !fd.file.isProto3 ||
           (v != JsonFormat.defaultValue(fd)) ||
           fd.containingOneof.isDefined) {
-          b += JField(name, serializeSingleValue(fd, v, formattingLongAsNumber))
+          b += JField(name, serializeSingleValue(fd, v, config.isFormattingLongAsNumber))
         }
     }
   }
 
   def toJson[A <: GeneratedMessage](m: A): JValue = {
-    formatRegistry.getMessageWriter[A](m.getClass) match {
+    config.formatRegistry.getMessageWriter[A](m.getClass) match {
       case Some(f) => f(this, m)
       case None =>
         val b = List.newBuilder[JField]
@@ -186,7 +235,7 @@ class Printer(
         b.sizeHint(descriptor.fields.size)
         descriptor.fields.foreach {
           f =>
-            val name = if (preservingProtoFieldNames) f.name else JsonFormat.jsonName(f)
+            val name = if (config.isPreservingProtoFieldNames) f.name else JsonFormat.jsonName(f)
             if (f.protoType.isTypeMessage) {
               serializeMessageField(f, name, m.getFieldByNumber(f.number), b)
             } else {
@@ -198,7 +247,7 @@ class Printer(
   }
 
   private def defaultJValue(fd: FieldDescriptor): JValue = serializeSingleValue(
-    fd, JsonFormat.defaultValue(fd), formattingLongAsNumber)
+    fd, JsonFormat.defaultValue(fd), config.isFormattingLongAsNumber)
 
   private def unsignedInt(n: Int): Long = n & 0x00000000FFFFFFFFL
   private def unsignedLong(n: Long): BigInt =
@@ -211,9 +260,9 @@ class Printer(
 
   def serializeSingleValue(fd: FieldDescriptor, value: PValue, formattingLongAsNumber: Boolean): JValue = value match {
     case PEnum(e) =>
-      formatRegistry.getEnumWriter(e.containingEnum) match {
+      config.formatRegistry.getEnumWriter(e.containingEnum) match {
         case Some(writer) => writer(this, e)
-        case None => if (formattingEnumsAsNumber) JInt(e.number) else JString(e.name)
+        case None => if (config.isFormattingEnumsAsNumber) JInt(e.number) else JString(e.name)
       }
     case PInt(v) if fd.protoType.isTypeUint32 => JInt(unsignedInt(v))
     case PInt(v) if fd.protoType.isTypeFixed32 => JInt(unsignedInt(v))
@@ -228,27 +277,47 @@ class Printer(
   }
 }
 
-class Parser(
-  preservingProtoFieldNames: Boolean = false,
-  formatRegistry: FormatRegistry = JsonFormat.DefaultRegistry,
-  val typeRegistry: TypeRegistry = TypeRegistry.empty) {
+object Parser {
+  private final case class ParserConfig(
+    isIgnoringUnknownFields: Boolean,
+    formatRegistry: FormatRegistry,
+    typeRegistry: TypeRegistry
+  )
+}
 
-  def fromJsonString[A <: GeneratedMessage with Message[A]](str: String)(
-    implicit cmp: GeneratedMessageCompanion[A]): A = {
+class Parser private (config: Parser.ParserConfig) {
+  def this() = this(Parser.ParserConfig(isIgnoringUnknownFields = false, JsonFormat.DefaultRegistry, TypeRegistry.empty))
+
+  @deprecated("Use new Parser() and chain with usingTypeRegistry or formatRegistry", "0.7.1")
+  def this(preservingProtoFieldNames: Boolean = false, formatRegistry: FormatRegistry = JsonFormat.DefaultRegistry,
+    typeRegistry: TypeRegistry = TypeRegistry.empty) =
+    this(Parser.ParserConfig(isIgnoringUnknownFields = false, formatRegistry, typeRegistry))
+
+  def ignoringUnknownFields: Parser = new Parser(config.copy(isIgnoringUnknownFields = true))
+
+  def withFormatRegistry(formatRegistry: FormatRegistry) =
+    new Parser(config.copy(formatRegistry = formatRegistry))
+
+  def withTypeRegistry(typeRegistry: TypeRegistry) =
+    new Parser(config.copy(typeRegistry = typeRegistry))
+
+  def typeRegistry: TypeRegistry = config.typeRegistry
+
+  def fromJsonString[A <: GeneratedMessage with Message[A] : GeneratedMessageCompanion](str: String): A = {
     import org.json4s.jackson.JsonMethods._
     fromJson(parse(str))
   }
 
-  def fromJson[A <: GeneratedMessage with Message[A]](value: JValue)(
+  def fromJson[A <: GeneratedMessage with Message[A] : GeneratedMessageCompanion](value: JValue): A = {
+    fromJson(value, false)
+  }
+
+  private[json4s] def fromJson[A <: GeneratedMessage with Message[A]](value: JValue, skipTypeUrl: Boolean)(
     implicit cmp: GeneratedMessageCompanion[A]): A = {
-    cmp.messageReads.read(fromJsonToPMessage(cmp, value))
+    cmp.messageReads.read(fromJsonToPMessage(cmp, value, skipTypeUrl))
   }
 
-  private def serializedName(fd: FieldDescriptor): String = {
-    if (preservingProtoFieldNames) fd.asProto.getName else JsonFormat.jsonName(fd)
-  }
-
-  private def fromJsonToPMessage(cmp: GeneratedMessageCompanion[_], value: JValue): PMessage = {
+  private def fromJsonToPMessage(cmp: GeneratedMessageCompanion[_], value: JValue, skipTypeUrl: Boolean): PMessage = {
 
     def parseValue(fd: FieldDescriptor, value: JValue): PValue = {
       if (fd.isMapField) {
@@ -273,30 +342,38 @@ class Parser(
                     valueDescriptor -> parseSingleValue(cmp.messageCompanionForFieldNumber(fd.number), valueDescriptor, jValue)))
             }(scala.collection.breakOut))
           case _ => throw new JsonFormatException(
-            s"Expected an object for map field ${serializedName(fd)} of ${fd.containingMessage.name}")
+            s"Expected an object for map field ${fd.name} of ${fd.containingMessage.name}")
         }
       } else if (fd.isRepeated) {
         value match {
           case JArray(vals) => PRepeated(vals.map(parseSingleValue(cmp, fd, _)).toVector)
           case _ => throw new JsonFormatException(
-            s"Expected an array for repeated field ${serializedName(fd)} of ${fd.containingMessage.name}")
+            s"Expected an array for repeated field ${fd.name} of ${fd.containingMessage.name}")
         }
       } else parseSingleValue(cmp, fd, value)
     }
 
-    formatRegistry.getMessageParser(cmp.defaultInstance.getClass) match {
+    config.formatRegistry.getMessageParser(cmp.defaultInstance.getClass) match {
       case Some(p) => p(this, value).asInstanceOf[GeneratedMessage].toPMessage
       case None =>
         value match {
           case JObject(fields) =>
-            val values: Map[String, JValue] = fields.map(k => k._1 -> k._2).toMap
+            val fieldMap = JsonFormat.MemorizedFieldNameMap(cmp.scalaDescriptor)
+            val valueMapBuilder = Map.newBuilder[FieldDescriptor, PValue]
+            fields.foreach {
+              case (name: String, jValue: JValue) =>
+                if (fieldMap.contains(name)) {
+                  if (jValue != JNull) {
+                    val fd = fieldMap(name)
+                    valueMapBuilder += (fd -> parseValue(fd, jValue))
+                  }
+                } else if (!config.isIgnoringUnknownFields && !(skipTypeUrl && name == "@type")) {
+                  throw new JsonFormatException(
+                    s"Cannot find field: ${name} in message ${cmp.scalaDescriptor.fullName}")
+                }
+            }
 
-            val valueMap: Map[FieldDescriptor, PValue] = (for {
-              fd <- cmp.scalaDescriptor.fields
-              jsValue <- values.get(serializedName(fd)) if jsValue != JNull
-            } yield (fd, parseValue(fd, jsValue))).toMap
-
-            PMessage(valueMap)
+            PMessage(valueMapBuilder.result())
           case _ =>
             throw new JsonFormatException(s"Expected an object, found ${value}")
         }
@@ -314,15 +391,15 @@ class Parser(
 
   protected def parseSingleValue(containerCompanion: GeneratedMessageCompanion[_], fd: FieldDescriptor, value: JValue): PValue = fd.scalaType match {
     case ScalaType.Enum(ed) =>
-      PEnum(formatRegistry.getEnumParser(ed) match {
+      PEnum(config.formatRegistry.getEnumParser(ed) match {
         case Some(parser) => parser(this, value)
         case None => defaultEnumParser(ed, value)
       })
     case ScalaType.Message(md) =>
-      fromJsonToPMessage(containerCompanion.messageCompanionForFieldNumber(fd.number), value)
+      fromJsonToPMessage(containerCompanion.messageCompanionForFieldNumber(fd.number), value, false)
     case st => JsonFormat.parsePrimitive(st, fd.protoType, value,
       throw new JsonFormatException(
-        s"Unexpected value ($value) for field ${serializedName(fd)} of ${fd.containingMessage.name}"))
+        s"Unexpected value ($value) for field ${fd.name} of ${fd.containingMessage.name}"))
   }
 }
 
@@ -512,4 +589,26 @@ object JsonFormat {
     // protoc<3 doesn't know about json_name, so we fill it in if it's not populated.
     fd.asProto.jsonName.getOrElse(NameUtils.snakeCaseToCamelCase(fd.asProto.getName))
   }
+
+  /** Given a message descriptor, provides a map from field names to field descriptors. */
+  private[json4s] object MemorizedFieldNameMap {
+    // The cached map. For thread-safety, we keep a changing references to an immutable map.
+    private var fieldNameMap: Map[Descriptor, Map[String, FieldDescriptor]] = Map.empty
+
+    def apply(descriptor: Descriptor): Map[String, FieldDescriptor] = {
+      if (fieldNameMap.contains(descriptor)) fieldNameMap(descriptor)
+      else {
+        val mapBuilder = Map.newBuilder[String, FieldDescriptor]
+        descriptor.fields.foreach {
+          fd =>
+            mapBuilder += fd.name -> fd
+            mapBuilder += JsonFormat.jsonName(fd) -> fd
+        }
+        val result = mapBuilder.result()
+        fieldNameMap = fieldNameMap + (descriptor -> result)
+        result
+      }
+    }
+  }
+
 }

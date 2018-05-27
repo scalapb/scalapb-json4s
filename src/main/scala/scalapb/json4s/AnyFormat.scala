@@ -31,7 +31,7 @@ object AnyFormat {
         case JString(typeUrl) =>
           val cmp = parser.typeRegistry.findType(typeUrl)
             .getOrElse(throw new JsonFormatException(s"""Unknown type: "$typeUrl""""))
-          val message = parser.fromJson(obj)(cmp)
+          val message = parser.fromJson(obj, true)(cmp)
           PBAny(typeUrl = typeUrl, value = message.toByteString)
 
         case JNothing =>

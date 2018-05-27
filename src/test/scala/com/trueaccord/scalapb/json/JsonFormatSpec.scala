@@ -1,6 +1,7 @@
 package com.trueaccord.scalapb.json
 
-import org.json4s.{JDouble, JInt, JValue}
+import com.google.protobuf.InvalidProtocolBufferException
+import org.json4s.{JDouble, JValue}
 import org.json4s.jackson.JsonMethods._
 import org.json4s.JsonDSL._
 import org.scalatest.{Assertion, FlatSpec, MustMatchers, OptionValues}
@@ -203,7 +204,7 @@ class JsonFormatSpec extends FlatSpec with MustMatchers with OptionValues {
   }
 
   "Empty object" should "give full json if including default values" in {
-    new Printer(includingDefaultValueFields = true).toJson(MyTest()) must be(
+    new Printer(isIncludingDefaultValueFields = true).toJson(MyTest()) must be(
       parse(
         """{
           |  "hello": "",
@@ -226,7 +227,7 @@ class JsonFormatSpec extends FlatSpec with MustMatchers with OptionValues {
   }
 
   "Empty object" should "with preserve field names should work" in {
-    new Printer(includingDefaultValueFields = true, preservingProtoFieldNames = true).toJson(MyTest()) must be(
+    new Printer(isIncludingDefaultValueFields = true, isPreservingProtoFieldNames = true).toJson(MyTest()) must be(
       parse(
         """{
           |  "hello": "",
@@ -253,7 +254,7 @@ class JsonFormatSpec extends FlatSpec with MustMatchers with OptionValues {
   }
 
   "TestProto" should "format int64 as JSON number" in {
-    new Printer(formattingLongAsNumber = true).print(MyTest(bazinga = Some(642))) must be("""{"bazinga":642}""")
+    new Printer(isFormattingLongAsNumber = true).print(MyTest(bazinga = Some(642))) must be("""{"bazinga":642}""")
   }
 
   "TestProto" should "parse numbers formatted as JSON string" in {
@@ -333,6 +334,11 @@ class JsonFormatSpec extends FlatSpec with MustMatchers with OptionValues {
   "TestProto" should "parse an enum formatted as number" in {
     new Parser().fromJsonString[MyTest]("""{"optEnum":1}""") must be(MyTest(optEnum = Some(MyEnum.V1)))
     new Parser().fromJsonString[MyTest]("""{"optEnum":2}""") must be(MyTest(optEnum = Some(MyEnum.V2)))
+  }
+
+  "TestProto" should "parse original field names" in {
+    new Parser().fromJsonString[MyTest]("""{"opt_enum":1}""") must be(MyTest(optEnum = Some(MyEnum.V1)))
+    new Parser().fromJsonString[MyTest]("""{"opt_enum":2}""") must be(MyTest(optEnum = Some(MyEnum.V2)))
   }
 
   "PreservedTestJson" should "be TestProto when parsed from json" in {
@@ -415,7 +421,27 @@ class JsonFormatSpec extends FlatSpec with MustMatchers with OptionValues {
 
   "formatEnumAsNumber" should "format enums as number" in {
     val p = MyTest().update(_.optEnum := MyEnum.V2)
-    new Printer(formattingEnumsAsNumber = true).toJson(p) must be(parse(s"""{"optEnum":2}"""))
+    new Printer(isFormattingEnumsAsNumber = true).toJson(p) must be(parse(s"""{"optEnum":2}"""))
   }
-  
+
+  "unknown fields" should "get rejected" in {
+    intercept[InvalidProtocolBufferException] {
+      JavaJsonFormat.parser().merge("""{"random_field_123": 3}""", jsontest.Test.MyTest.newBuilder)
+    }
+    intercept[JsonFormatException] {
+      JsonFormat.fromJsonString[MyTest]("""{"random_field_123": 3}""")
+    }
+    // There is special for @type field for anys, lets make sure they get rejected too
+    intercept[JsonFormatException] {
+      JsonFormat.fromJsonString[MyTest]("""{"@type": "foo"}""")
+    }
+  }
+
+  "unknown fields" should "not get rejected when ignoreUnknownFields is set" in {
+    val parser = new Parser().ignoringUnknownFields
+    parser.fromJsonString[MyTest]("""{"random_field_123": 3}""")
+    // There is special for @type field for anys, lets make sure they get rejected too
+    parser.fromJsonString[MyTest]("""{"@type": "foo"}""")
+  }
+
 }
