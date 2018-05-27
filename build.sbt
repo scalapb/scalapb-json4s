@@ -70,3 +70,5 @@ PB.targets in Test := Seq(
 PB.targets in Proto26Test := Seq(
   scalapb.gen() -> (sourceManaged in Proto26Test).value
 )
+
+mimaPreviousArtifacts := Set("com.thesamet.scalapb" %% "scalapb-json4s" % "0.7.0")
