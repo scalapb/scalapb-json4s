@@ -1,4 +1,4 @@
-package com.trueaccord.scalapb.json
+package scalapb.json4s
 
 import com.google.protobuf.duration.Duration
 import com.google.protobuf.timestamp.Timestamp

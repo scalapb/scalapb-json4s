@@ -1,9 +1,8 @@
-package com.trueaccord.scalapb.json
+package scalapb.json4s
 
-import org.scalatest.{FlatSpec, MustMatchers}
 import com.google.protobuf.struct._
-import com.trueaccord.scalapb._
 import jsontest.test3.StructTest
+import org.scalatest.{FlatSpec, MustMatchers}
 
 class StructFormatSpec extends FlatSpec with MustMatchers with JavaAssertions {
   val ListValueExample = ListValue(values = Seq(

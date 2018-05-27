@@ -1,9 +1,10 @@
-package com.trueaccord.scalapb.json
+package scalapb.json4s
 
 import com.google.protobuf.util.JsonFormat.{TypeRegistry => JavaTypeRegistry}
+import org.scalatest.MustMatchers
 import scalapb.json4s.JsonFormat.GenericCompanion
 import scalapb.{GeneratedMessage, GeneratedMessageCompanion, JavaProtoSupport, Message}
-import org.scalatest.MustMatchers
+
 import scala.language.existentials
 
 trait JavaAssertions {
@@ -16,8 +17,8 @@ trait JavaAssertions {
   val JavaJsonParser = com.google.protobuf.util.JsonFormat.parser()
 
   val ScalaTypeRegistry = registeredCompanions.foldLeft(TypeRegistry.empty)((r, c) => r.addMessageByCompanion(c.asInstanceOf[GenericCompanion]))
-  val ScalaJsonParser = new Parser(typeRegistry = ScalaTypeRegistry)
-  val ScalaJsonPrinter = new Printer(typeRegistry = ScalaTypeRegistry)
+  val ScalaJsonParser = new Parser().withTypeRegistry(ScalaTypeRegistry)
+  val ScalaJsonPrinter = new Printer().withTypeRegistry(typeRegistry = ScalaTypeRegistry)
 
   def assertJsonIsSameAsJava[T <: GeneratedMessage with Message[T]](v: T, checkRoundtrip: Boolean = true)(
     implicit cmp: GeneratedMessageCompanion[T]) = {

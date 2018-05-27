@@ -1,4 +1,4 @@
-package com.trueaccord.scalapb.json
+package scalapb.json4s
 
 import com.google.protobuf.wrappers.UInt64Value
 import jsontest.test3.{MyTest3, Test3Proto, Wrapper}

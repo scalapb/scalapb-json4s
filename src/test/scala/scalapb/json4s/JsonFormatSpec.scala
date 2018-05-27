@@ -1,16 +1,16 @@
-package com.trueaccord.scalapb.json
+package scalapb.json4s
 
 import com.google.protobuf.InvalidProtocolBufferException
-import org.json4s.{JDouble, JValue}
-import org.json4s.jackson.JsonMethods._
-import org.json4s.JsonDSL._
-import org.scalatest.{Assertion, FlatSpec, MustMatchers, OptionValues}
-import jsontest.test._
-import jsontest.test3._
-import com.google.protobuf.util.{JsonFormat => JavaJsonFormat}
 import com.google.protobuf.any.{Any => PBAny}
 import com.google.protobuf.util.JsonFormat.{TypeRegistry => JavaTypeRegistry}
+import com.google.protobuf.util.{JsonFormat => JavaJsonFormat}
 import jsontest.custom_collection.{Guitar, Studio}
+import jsontest.test._
+import jsontest.test3._
+import org.json4s.JsonDSL._
+import org.json4s.jackson.JsonMethods._
+import org.json4s.{JDouble, JValue}
+import org.scalatest.{Assertion, FlatSpec, MustMatchers, OptionValues}
 
 class JsonFormatSpec extends FlatSpec with MustMatchers with OptionValues {
 
@@ -204,7 +204,7 @@ class JsonFormatSpec extends FlatSpec with MustMatchers with OptionValues {
   }
 
   "Empty object" should "give full json if including default values" in {
-    new Printer(isIncludingDefaultValueFields = true).toJson(MyTest()) must be(
+    new Printer().includingDefaultValueFields.toJson(MyTest()) must be(
       parse(
         """{
           |  "hello": "",
@@ -227,7 +227,7 @@ class JsonFormatSpec extends FlatSpec with MustMatchers with OptionValues {
   }
 
   "Empty object" should "with preserve field names should work" in {
-    new Printer(isIncludingDefaultValueFields = true, isPreservingProtoFieldNames = true).toJson(MyTest()) must be(
+    new Printer().includingDefaultValueFields.preservingProtoFieldNames.toJson(MyTest()) must be(
       parse(
         """{
           |  "hello": "",
@@ -254,7 +254,7 @@ class JsonFormatSpec extends FlatSpec with MustMatchers with OptionValues {
   }
 
   "TestProto" should "format int64 as JSON number" in {
-    new Printer(isFormattingLongAsNumber = true).print(MyTest(bazinga = Some(642))) must be("""{"bazinga":642}""")
+    new Printer().formattingLongAsNumber.print(MyTest(bazinga = Some(642))) must be("""{"bazinga":642}""")
   }
 
   "TestProto" should "parse numbers formatted as JSON string" in {
@@ -342,7 +342,7 @@ class JsonFormatSpec extends FlatSpec with MustMatchers with OptionValues {
   }
 
   "PreservedTestJson" should "be TestProto when parsed from json" in {
-    new Parser(preservingProtoFieldNames = true).fromJsonString[MyTest](PreservedTestJson) must be (TestProto)
+    new Parser().fromJsonString[MyTest](PreservedTestJson) must be (TestProto)
   }
 
   "DoubleFloatProto" should "parse NaNs" in {
@@ -384,8 +384,8 @@ class JsonFormatSpec extends FlatSpec with MustMatchers with OptionValues {
   val anyEnabledJavaTypeRegistry = JavaTypeRegistry.newBuilder().add(TestProto.companion.javaDescriptor).build()
   val anyEnabledJavaPrinter = JavaJsonFormat.printer().usingTypeRegistry(anyEnabledJavaTypeRegistry)
   val anyEnabledTypeRegistry = TypeRegistry.empty.addMessageByCompanion(TestProto.companion)
-  val anyEnabledParser = new Parser(typeRegistry = anyEnabledTypeRegistry)
-  val anyEnabledPrinter = new Printer(typeRegistry = anyEnabledTypeRegistry)
+  val anyEnabledParser = new Parser().withTypeRegistry(anyEnabledTypeRegistry)
+  val anyEnabledPrinter = new Printer().withTypeRegistry(anyEnabledTypeRegistry)
 
   "TestProto packed as any" should "give TestJsonWithType after JSON serialization" in {
     val any = PBAny.pack(TestProto)
@@ -421,7 +421,7 @@ class JsonFormatSpec extends FlatSpec with MustMatchers with OptionValues {
 
   "formatEnumAsNumber" should "format enums as number" in {
     val p = MyTest().update(_.optEnum := MyEnum.V2)
-    new Printer(isFormattingEnumsAsNumber = true).toJson(p) must be(parse(s"""{"optEnum":2}"""))
+    new Printer().formattingEnumsAsNumber.toJson(p) must be(parse(s"""{"optEnum":2}"""))
   }
 
   "unknown fields" should "get rejected" in {

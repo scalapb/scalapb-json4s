@@ -122,17 +122,17 @@ class Printer private(config: Printer.PrinterConfig) {
 
   @deprecated("Use new Printer() and chain includingDefaultValueFields, preservingProtoFieldNames, etc.", "0.7.2")
   def this(
-    isIncludingDefaultValueFields: Boolean = false,
-    isPreservingProtoFieldNames: Boolean = false,
-    isFormattingLongAsNumber: Boolean = false,
-    isFormattingEnumsAsNumber: Boolean = false,
+    includingDefaultValueFields: Boolean = false,
+    preservingProtoFieldNames: Boolean = false,
+    formattingLongAsNumber: Boolean = false,
+    formattingEnumsAsNumber: Boolean = false,
     formatRegistry: FormatRegistry = JsonFormat.DefaultRegistry,
     typeRegistry: TypeRegistry = TypeRegistry.empty) = this(
       Printer.PrinterConfig(
-        isIncludingDefaultValueFields = isIncludingDefaultValueFields,
-        isPreservingProtoFieldNames = isPreservingProtoFieldNames,
-        isFormattingLongAsNumber = isFormattingLongAsNumber,
-        isFormattingEnumsAsNumber = isFormattingEnumsAsNumber,
+        isIncludingDefaultValueFields = includingDefaultValueFields,
+        isPreservingProtoFieldNames = preservingProtoFieldNames,
+        isFormattingLongAsNumber = formattingLongAsNumber,
+        isFormattingEnumsAsNumber = formattingEnumsAsNumber,
         formatRegistry = formatRegistry,
         typeRegistry = typeRegistry
       )

@@ -1,10 +1,9 @@
-package com.trueaccord.scalapb.json
+package scalapb.json4s
 
 import com.google.protobuf.util.JsonFormat.{printer => ProtobufJavaPrinter}
 import jsontest.oneof.OneOf._
-import jsontest.oneof.{Dictionary,Pair}
 import jsontest.oneof.Pair.ValueByType._
-import jsontest.oneof.{OneOf, OneOfMessage}
+import jsontest.oneof.{Dictionary, OneOf, OneOfMessage, Pair}
 import org.json4s.jackson.JsonMethods.parse
 import org.scalatest.prop._
 import org.scalatest.{FlatSpec, MustMatchers}
@@ -24,13 +23,13 @@ class OneOfSpec extends FlatSpec with MustMatchers with TableDrivenPropertyCheck
   )
 
   forEvery(examples) { (message: OneOf, json: String) =>
-    new Printer(isIncludingDefaultValueFields = false).toJson(message) must be(parse(json))
-    new Printer(isIncludingDefaultValueFields = false).toJson(message) must be(parse(
+    new Printer().includingDefaultValueFields.toJson(message) must be(parse(json))
+    new Printer().includingDefaultValueFields.toJson(message) must be(parse(
       ProtobufJavaPrinter().print(toJavaProto(message))
     ))
 
-    new Printer(isIncludingDefaultValueFields = true).toJson(message) must be(parse(json))
-    new Printer(isIncludingDefaultValueFields = true).toJson(message) must be(parse(
+    new Printer().includingDefaultValueFields.toJson(message) must be(parse(json))
+    new Printer().includingDefaultValueFields.toJson(message) must be(parse(
       ProtobufJavaPrinter().includingDefaultValueFields().print(toJavaProto(message))
     ))
   }
@@ -38,10 +37,10 @@ class OneOfSpec extends FlatSpec with MustMatchers with TableDrivenPropertyCheck
   "dictionary test" should "preserve zero values in one of" in {
     val message = Dictionary(Seq(Pair("myKey", Uint32Value(0))))
 
-    new Printer(isIncludingDefaultValueFields = false).toJson(message) must be(
+    new Printer().includingDefaultValueFields.toJson(message) must be(
         parse("""{"pairs":[{"key": "myKey", "uint32Value": 0}]}"""))
 
-    new Printer(isIncludingDefaultValueFields = true).toJson(message) must be(
+    new Printer().includingDefaultValueFields.toJson(message) must be(
         parse("""{"pairs":[{"key": "myKey", "uint32Value": 0}]}"""))
   }
 }

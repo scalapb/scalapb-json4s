@@ -1,11 +1,11 @@
-package com.trueaccord.scalapb.json
+package scalapb.json4s
 
 import com.google.protobuf.ByteString
 import jsontest.test3._
 import org.json4s.JsonAST.{JBool, JDouble, JString}
-import org.json4s.{JInt, JValue}
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
+import org.json4s.{JInt, JValue}
 import org.scalatest.{FlatSpec, MustMatchers}
 
 
