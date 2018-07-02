@@ -4,6 +4,7 @@ package jsontest;
 
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
+import "google/protobuf/field_mask.proto";
 
 enum MyEnum {
   UNKNOWN = 0;
@@ -53,6 +54,7 @@ message IntFields {
 message WellKnownTest {
   optional google.protobuf.Duration duration = 1;
   optional google.protobuf.Timestamp timestamp = 2;
+  optional google.protobuf.FieldMask mask = 3;
 }
 
 message DoubleFloat {

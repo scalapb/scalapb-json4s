@@ -1,7 +1,9 @@
 package scalapb.json4s
 
 import com.google.protobuf.duration.Duration
+import com.google.protobuf.field_mask.FieldMask
 import com.google.protobuf.timestamp.Timestamp
+import com.google.protobuf.util.JsonFormat.{parser => ProtobufJavaParser, printer => ProtobufJavaPrinter}
 import jsontest.test.WellKnownTest
 import org.json4s.jackson.JsonMethods._
 import org.scalatest.{FlatSpec, MustMatchers}
@@ -71,5 +73,31 @@ class WellKnownTypesSpec extends FlatSpec with MustMatchers {
     val timestampProto = WellKnownTest(timestamp = Some(Timestamp(seconds = 1474029324, nanos = 375123456)))
     JsonFormat.parser.fromJsonString[WellKnownTest](timestampJson) must be(timestampProto)
     JsonFormat.printer.toJson(timestampProto) must be(parse(timestampJson))
+  }
+
+  "FieldMask" should "serialize to comma separated string" in {
+    val fieldMaskJson = """{"mask":"a,b"}"""
+    val fieldMaskProto = WellKnownTest(mask = Some(FieldMask(paths = Seq("a", "b"))))
+
+    JsonFormat.parser.fromJsonString[WellKnownTest](fieldMaskJson) must be(fieldMaskProto)
+    JsonFormat.printer.toJson(fieldMaskProto) must be(parse(fieldMaskJson))
+
+    // Conform to protobuf-java
+    JsonFormat.printer.toJson(fieldMaskProto) must be(parse(
+      ProtobufJavaPrinter.print(WellKnownTest.toJavaProto(fieldMaskProto))
+    ))
+
+    // Handle edge case of empty string
+    val fieldMaskJsonEmpty = """{"mask":""}"""
+    val fieldMaskProtoEmpty = WellKnownTest(mask = Some(FieldMask()))
+
+    JsonFormat.parser.fromJsonString[WellKnownTest](fieldMaskJsonEmpty) must be(fieldMaskProtoEmpty)
+
+    // Conform to protobuf-java
+    JsonFormat.parser.fromJsonString[WellKnownTest](fieldMaskJsonEmpty) must be {
+      val javaBuilder = jsontest.Test.WellKnownTest.newBuilder
+      ProtobufJavaParser.merge(fieldMaskJsonEmpty, javaBuilder)
+      WellKnownTest.fromJavaProto(javaBuilder.build())
+    }
   }
 }
