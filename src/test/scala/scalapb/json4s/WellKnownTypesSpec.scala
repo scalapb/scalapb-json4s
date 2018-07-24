@@ -89,18 +89,5 @@ class WellKnownTypesSpec extends FlatSpec with MustMatchers {
 
   it should "parse comma separated string" in {
     JsonFormat.parser.fromJsonString[WellKnownTest](fieldMaskJson) must be(fieldMaskProto)
-
-    // Handle edge case of empty string
-    val fieldMaskJsonEmpty = """{"mask":""}"""
-    val fieldMaskProtoEmpty = WellKnownTest(mask = Some(FieldMask()))
-
-    JsonFormat.parser.fromJsonString[WellKnownTest](fieldMaskJsonEmpty) must be(fieldMaskProtoEmpty)
-
-    // Conform to protobuf-java
-    JsonFormat.parser.fromJsonString[WellKnownTest](fieldMaskJsonEmpty) must be {
-      val javaBuilder = jsontest.Test.WellKnownTest.newBuilder
-      ProtobufJavaParser.merge(fieldMaskJsonEmpty, javaBuilder)
-      WellKnownTest.fromJavaProto(javaBuilder.build())
-    }
   }
 }
