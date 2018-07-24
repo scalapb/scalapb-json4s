@@ -75,17 +75,20 @@ class WellKnownTypesSpec extends FlatSpec with MustMatchers {
     JsonFormat.printer.toJson(timestampProto) must be(parse(timestampJson))
   }
 
-  "FieldMask" should "serialize to comma separated string" in {
-    val fieldMaskJson = """{"mask":"a,b"}"""
-    val fieldMaskProto = WellKnownTest(mask = Some(FieldMask(paths = Seq("a", "b"))))
+  val fieldMaskJson = """{"mask":"a,b"}"""
+  val fieldMaskProto = WellKnownTest(mask = Some(FieldMask(paths = Seq("a", "b"))))
 
-    JsonFormat.parser.fromJsonString[WellKnownTest](fieldMaskJson) must be(fieldMaskProto)
+  "FieldMask" should "print comma separated string" in {
     JsonFormat.printer.toJson(fieldMaskProto) must be(parse(fieldMaskJson))
 
     // Conform to protobuf-java
     JsonFormat.printer.toJson(fieldMaskProto) must be(parse(
       ProtobufJavaPrinter.print(WellKnownTest.toJavaProto(fieldMaskProto))
     ))
+  }
+
+  it should "parse comma separated string" in {
+    JsonFormat.parser.fromJsonString[WellKnownTest](fieldMaskJson) must be(fieldMaskProto)
 
     // Handle edge case of empty string
     val fieldMaskJsonEmpty = """{"mask":""}"""
