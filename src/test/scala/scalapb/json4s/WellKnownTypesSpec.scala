@@ -3,7 +3,7 @@ package scalapb.json4s
 import com.google.protobuf.duration.Duration
 import com.google.protobuf.field_mask.FieldMask
 import com.google.protobuf.timestamp.Timestamp
-import com.google.protobuf.util.JsonFormat.{parser => ProtobufJavaParser, printer => ProtobufJavaPrinter}
+import com.google.protobuf.util.JsonFormat.{printer => ProtobufJavaPrinter}
 import jsontest.test.WellKnownTest
 import org.json4s.jackson.JsonMethods._
 import org.scalatest.{FlatSpec, MustMatchers}
