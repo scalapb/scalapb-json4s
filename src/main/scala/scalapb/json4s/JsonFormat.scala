@@ -418,8 +418,8 @@ object JsonFormat {
       case JString(str) => Timestamps.parseTimestamp(str)
       case _ => throw new JsonFormatException("Expected a string.")
     })
-    .registerWriter((m: FieldMask) => JString(m.paths.mkString(",")), jv => jv match {
-      case JString(str) => FieldMask(if (str.isEmpty) Nil else str.split(','))
+    .registerWriter((m: FieldMask) => JString(FieldMaskUtil.toJsonString(m)), jv => jv match {
+      case JString(str) => FieldMaskUtil.fromJsonString(str)
       case _ => throw new JsonFormatException("Expected a string.")
     })
     .registerMessageFormatter[wrappers.DoubleValue](primitiveWrapperWriter, primitiveWrapperParser[wrappers.DoubleValue])
