@@ -15,6 +15,7 @@ import scala.collection.mutable
 import scala.language.existentials
 import scala.reflect.ClassTag
 import _root_.scalapb.descriptors._
+import com.google.protobuf.field_mask.FieldMask
 
 case class JsonFormatException(msg: String, cause: Exception) extends Exception(msg, cause) {
   def this(msg: String) = this(msg, null)
@@ -415,6 +416,10 @@ object JsonFormat {
     })
     .registerWriter((t: Timestamp) => JString(Timestamps.writeTimestamp(t)), jv => jv match {
       case JString(str) => Timestamps.parseTimestamp(str)
+      case _ => throw new JsonFormatException("Expected a string.")
+    })
+    .registerWriter((m: FieldMask) => JString(FieldMaskUtil.toJsonString(m)), jv => jv match {
+      case JString(str) => FieldMaskUtil.fromJsonString(str)
       case _ => throw new JsonFormatException("Expected a string.")
     })
     .registerMessageFormatter[wrappers.DoubleValue](primitiveWrapperWriter, primitiveWrapperParser[wrappers.DoubleValue])
