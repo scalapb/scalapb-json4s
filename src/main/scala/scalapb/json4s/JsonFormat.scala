@@ -104,6 +104,7 @@ object Printer {
     isPreservingProtoFieldNames: Boolean,
     isFormattingLongAsNumber: Boolean,
     isFormattingEnumsAsNumber: Boolean,
+    isFormattingUnknownEnumValuesAsNumber: Boolean,
     formatRegistry: FormatRegistry,
     typeRegistry: TypeRegistry
   )
@@ -113,6 +114,7 @@ object Printer {
     isPreservingProtoFieldNames = false,
     isFormattingLongAsNumber = false,
     isFormattingEnumsAsNumber = false,
+    isFormattingUnknownEnumValuesAsNumber = false,
     formatRegistry = JsonFormat.DefaultRegistry,
     typeRegistry = TypeRegistry.empty
   )
@@ -127,6 +129,7 @@ class Printer private(config: Printer.PrinterConfig) {
     preservingProtoFieldNames: Boolean = false,
     formattingLongAsNumber: Boolean = false,
     formattingEnumsAsNumber: Boolean = false,
+    formattingUnknownEnumValuesAsNumber: Boolean = false,
     formatRegistry: FormatRegistry = JsonFormat.DefaultRegistry,
     typeRegistry: TypeRegistry = TypeRegistry.empty) = this(
       Printer.PrinterConfig(
@@ -134,6 +137,7 @@ class Printer private(config: Printer.PrinterConfig) {
         isPreservingProtoFieldNames = preservingProtoFieldNames,
         isFormattingLongAsNumber = formattingLongAsNumber,
         isFormattingEnumsAsNumber = formattingEnumsAsNumber,
+        isFormattingUnknownEnumValuesAsNumber = formattingUnknownEnumValuesAsNumber,
         formatRegistry = formatRegistry,
         typeRegistry = typeRegistry
       )
@@ -146,6 +150,8 @@ class Printer private(config: Printer.PrinterConfig) {
   def formattingLongAsNumber: Printer = new Printer(config.copy(isFormattingLongAsNumber = true))
 
   def formattingEnumsAsNumber: Printer = new Printer(config.copy(isFormattingEnumsAsNumber = true))
+
+  def formattingUnknownEnumValuesAsNumber = new Printer(config.copy(isFormattingUnknownEnumValuesAsNumber = true))
 
   def withFormatRegistry(formatRegistry: FormatRegistry): Printer =
     new Printer(config.copy(formatRegistry = formatRegistry))
@@ -263,7 +269,7 @@ class Printer private(config: Printer.PrinterConfig) {
     case PEnum(e) =>
       config.formatRegistry.getEnumWriter(e.containingEnum) match {
         case Some(writer) => writer(this, e)
-        case None => if (config.isFormattingEnumsAsNumber) JInt(e.number) else JString(e.name)
+        case None => if (config.isFormattingEnumsAsNumber || (config.isFormattingUnknownEnumValuesAsNumber && e.isUnrecognized)) JInt(e.number) else JString(e.name)
       }
     case PInt(v) if fd.protoType.isTypeUint32 => JInt(unsignedInt(v))
     case PInt(v) if fd.protoType.isTypeFixed32 => JInt(unsignedInt(v))
@@ -281,20 +287,23 @@ class Printer private(config: Printer.PrinterConfig) {
 object Parser {
   private final case class ParserConfig(
     isIgnoringUnknownFields: Boolean,
+    allowUnknownNumericEnumValues: Boolean,
     formatRegistry: FormatRegistry,
     typeRegistry: TypeRegistry
   )
 }
 
 class Parser private (config: Parser.ParserConfig) {
-  def this() = this(Parser.ParserConfig(isIgnoringUnknownFields = false, JsonFormat.DefaultRegistry, TypeRegistry.empty))
+  def this() = this(Parser.ParserConfig(isIgnoringUnknownFields = false, allowUnknownNumericEnumValues = false, JsonFormat.DefaultRegistry, TypeRegistry.empty))
 
   @deprecated("Use new Parser() and chain with usingTypeRegistry or formatRegistry", "0.7.1")
   def this(preservingProtoFieldNames: Boolean = false, formatRegistry: FormatRegistry = JsonFormat.DefaultRegistry,
     typeRegistry: TypeRegistry = TypeRegistry.empty) =
-    this(Parser.ParserConfig(isIgnoringUnknownFields = false, formatRegistry, typeRegistry))
+    this(Parser.ParserConfig(isIgnoringUnknownFields = false, allowUnknownNumericEnumValues = false, formatRegistry, typeRegistry))
 
   def ignoringUnknownFields: Parser = new Parser(config.copy(isIgnoringUnknownFields = true))
+
+  def allowUnknownNumericEnumValues: Parser = new Parser(config.copy(allowUnknownNumericEnumValues = true))
 
   def withFormatRegistry(formatRegistry: FormatRegistry) =
     new Parser(config.copy(formatRegistry = formatRegistry))
@@ -382,7 +391,14 @@ class Parser private (config: Parser.ParserConfig) {
   }
 
   def defaultEnumParser(enumDescriptor: EnumDescriptor, value: JValue): EnumValueDescriptor = value match {
-    case JInt(v) => enumDescriptor.findValueByNumber(v.toInt).getOrElse(throw new JsonFormatException(s"Invalid enum value: ${v.toInt} for enum type: ${enumDescriptor.fullName}"))
+    case JInt(v) => {
+      if (config.allowUnknownNumericEnumValues) {
+        enumDescriptor.findValueByNumberCreatingIfUnknown(v.toInt)
+      }
+      else {
+        enumDescriptor.findValueByNumber(v.toInt).getOrElse(throw new JsonFormatException(s"Invalid enum value: ${v.toInt} for enum type: ${enumDescriptor.fullName}"))
+      }
+    }
     case JString(s) =>
       enumDescriptor.values.find(_.name == s).getOrElse(throw new JsonFormatException(s"Unrecognized enum value '${s}'"))
     case _ =>
