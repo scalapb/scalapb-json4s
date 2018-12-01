@@ -18,6 +18,8 @@ scalacOptions in ThisBuild ++= {
 
 releaseCrossBuild := true
 
+publishTo := sonatypePublishTo.value
+
 releasePublishArtifactsAction := PgpKeys.publishSigned.value
 
 releaseProcess := Seq[ReleaseStep](
@@ -28,11 +30,11 @@ releaseProcess := Seq[ReleaseStep](
   setReleaseVersion,
   commitReleaseVersion,
   tagRelease,
-  ReleaseStep(action = "publishSigned" :: _, enableCrossBuild = true),
+  releaseStepCommandAndRemaining("+publishSigned"),
   setNextVersion,
   commitNextVersion,
+  releaseStepCommand("sonatypeReleaseAll"),
   pushChanges,
-  ReleaseStep(action = "sonaTypeReleaseAll" :: _, enableCrossBuild = true),
 )
 
 libraryDependencies ++= Seq(
