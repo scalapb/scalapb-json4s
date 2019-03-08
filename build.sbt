@@ -43,8 +43,8 @@ libraryDependencies ++= Seq(
   "org.json4s" %% "json4s-jackson" % "3.6.5",
   "org.scalatest" %% "scalatest" % "3.0.6" % "test",
   "org.scalacheck" %% "scalacheck" % "1.14.0" % "test",
-  "com.google.protobuf" % "protobuf-java-util" % "3.6.1" % "test",
-  "com.google.protobuf" % "protobuf-java" % "3.6.1" % "protobuf"
+  "com.google.protobuf" % "protobuf-java-util" % "3.7.0" % "test",
+  "com.google.protobuf" % "protobuf-java" % "3.7.0" % "protobuf"
 )
 
 lazy val Proto26Test = config("proto26") extend(Test)
