@@ -64,7 +64,7 @@ case class FormatRegistry(
 
 /** TypeRegistry is used to map the @type field in Any messages to a ScalaPB generated message.
   *
-  * You need to
+  * TypeRegistries are added to Printers and Parsers to enable printing and parsing of Any messages.
   */
 case class TypeRegistry(companions: Map[String, GenericCompanion] = Map.empty, private val filesSeen: Set[String]=Set.empty) {
   def addMessage[T <: GeneratedMessage with Message[T]](implicit cmp: GeneratedMessageCompanion[T]): TypeRegistry = {

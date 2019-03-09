@@ -11,7 +11,7 @@ object AnyFormat {
     // including the original GeneratedMessage with the Any (at least in memory).
     val cmp = printer.typeRegistry.findType(any.typeUrl)
       .getOrElse(throw new IllegalStateException(
-        s"Unknown type ${any.typeUrl}; you may have to register it via FormatRegistry.registerCompanion"))
+        s"Unknown type ${any.typeUrl} in Any.  Add a TypeRegistry that supports this type to the Printer."))
 
     // Unpack the message...
     val message = any.unpack(cmp)
@@ -30,7 +30,8 @@ object AnyFormat {
       obj \ "@type" match {
         case JString(typeUrl) =>
           val cmp = parser.typeRegistry.findType(typeUrl)
-            .getOrElse(throw new JsonFormatException(s"""Unknown type: "$typeUrl""""))
+            .getOrElse(throw new JsonFormatException(
+            s"Unknown type ${typeUrl} in Any.  Add a TypeRegistry that supports this type to the Parser."))
           val message = parser.fromJson(obj, true)(cmp)
           PBAny(typeUrl = typeUrl, value = message.toByteString)
 
