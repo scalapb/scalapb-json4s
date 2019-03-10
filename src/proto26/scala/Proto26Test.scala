@@ -1,6 +1,7 @@
-package com.trueaccord.scalapb.json
+package scalapb.json
 
 import org.scalatest.{FlatSpec, MustMatchers}
+import scalapb.json4s.JsonFormat
 
 import foo.foo.TestMessage
 import org.json4s.jackson.JsonMethods._
