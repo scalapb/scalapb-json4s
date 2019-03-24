@@ -1,13 +1,10 @@
 language: scala
 sudo: false
+jdk: oraclejdk9
 scala:
    - 2.11.12
-matrix:
-  include:
-  - scala: 2.12.8
-    jdk: oraclejdk8
-  - scala: 2.13.0-M5
-    jdk: oraclejdk8
+   - 2.12.8
+   - 2.13.0-M5
 
 script:
 - sbt ++$TRAVIS_SCALA_VERSION test proto26:test mimaReportBinaryIssues
