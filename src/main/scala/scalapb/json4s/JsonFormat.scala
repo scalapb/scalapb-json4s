@@ -327,7 +327,7 @@ class Parser private (config: Parser.ParserConfig) {
             val mapEntryDesc = fd.scalaType.asInstanceOf[ScalaType.Message].descriptor
             val keyDescriptor = mapEntryDesc.findFieldByNumber(1).get
             val valueDescriptor = mapEntryDesc.findFieldByNumber(2).get
-            PRepeated(vals.map {
+            PRepeated(vals.iterator.map {
               case (key, jValue) =>
                 val keyObj = keyDescriptor.scalaType match {
                   case ScalaType.Boolean => PBoolean(java.lang.Boolean.valueOf(key))
@@ -341,7 +341,7 @@ class Parser private (config: Parser.ParserConfig) {
                 PMessage(
                   Map(keyDescriptor -> keyObj,
                     valueDescriptor -> parseSingleValue(cmp.messageCompanionForFieldNumber(fd.number), valueDescriptor, jValue)))
-            }(scala.collection.breakOut))
+            }.toVector)
           case _ => throw new JsonFormatException(
             s"Expected an object for map field ${fd.name} of ${fd.containingMessage.name}")
         }
@@ -500,7 +500,7 @@ object JsonFormat {
     case (ScalaType.Int, JString(x)) if protoType.isTypeSint32 => parseInt32(x)
     case (ScalaType.Int, JString(x)) => parseUint32(x)
     case (ScalaType.Long, JLong(x)) => PLong(x.toLong)
-    case (ScalaType.Long, JDecimal(x)) => PLong(x.longValue())
+    case (ScalaType.Long, JDecimal(x)) => PLong(x.longValue)
     case (ScalaType.Long, JString(x)) if protoType.isTypeInt64 => parseInt64(x)
     case (ScalaType.Long, JString(x)) if protoType.isTypeSint64 => parseInt64(x)
     case (ScalaType.Long, JString(x)) => parseUint64(x)
@@ -569,9 +569,9 @@ object JsonFormat {
       case e: JsonFormatException => throw e
       case e: Exception => // Fall through.
     }
-    parseBigDecimal(value).toBigIntExact().map { intVal =>
+    parseBigDecimal(value).toBigIntExact.map { intVal =>
       if (intVal < 0 || intVal > 0xFFFFFFFFl) throw new JsonFormatException(s"Out of range uint32 value: $value")
-      PLong(intVal.intValue())
+      PLong(intVal.intValue)
     } getOrElse {
       throw new JsonFormatException(s"Not an uint32 value: $value")
     }
@@ -580,11 +580,11 @@ object JsonFormat {
   val MAX_UINT64 = BigInt("FFFFFFFFFFFFFFFF", 16)
 
   def parseUint64(value: String): PValue = {
-    parseBigDecimal(value).toBigIntExact().map { intVal =>
+    parseBigDecimal(value).toBigIntExact.map { intVal =>
       if (intVal < 0 || intVal > MAX_UINT64) {
         throw new JsonFormatException(s"Out of range uint64 value: $value")
       }
-      PLong(intVal.longValue())
+      PLong(intVal.longValue)
     } getOrElse {
       throw new JsonFormatException(s"Not an uint64 value: $value")
     }

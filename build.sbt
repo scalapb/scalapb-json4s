@@ -3,7 +3,7 @@ import scalapb.compiler.Version.scalapbVersion
 
 scalaVersion := "2.11.12"
 
-crossScalaVersions := Seq("2.10.7", "2.11.12", "2.12.8")
+crossScalaVersions := Seq("2.11.12", "2.12.8", "2.13.0-M5")
 
 organization in ThisBuild := "com.thesamet.scalapb"
 
@@ -44,7 +44,7 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "3.0.6" % "test",
   "org.scalacheck" %% "scalacheck" % "1.14.0" % "test",
   "com.google.protobuf" % "protobuf-java-util" % "3.7.0" % "test",
-  "com.google.protobuf" % "protobuf-java" % "3.7.0" % "protobuf"
+  "com.google.protobuf" % "protobuf-java" % "3.7.0" % "protobuf",
 )
 
 lazy val Proto26Test = config("proto26") extend(Test)
