@@ -518,6 +518,8 @@ object JsonFormat {
     case (ScalaType.Float, JString("Infinity")) => PFloat(Float.PositiveInfinity)
     case (ScalaType.Float, JString("-Infinity")) => PFloat(Float.NegativeInfinity)
     case (ScalaType.Boolean, JBool(b)) => PBoolean(b)
+    case (ScalaType.Boolean, JString("true")) => PBoolean(true)
+    case (ScalaType.Boolean, JString("false")) => PBoolean(false)
     case (ScalaType.String, JString(s)) => PString(s)
     case (ScalaType.ByteString, JString(s)) =>
       PByteString(ByteString.copyFrom(Base64Variants.getDefaultVariant.decode(s)))

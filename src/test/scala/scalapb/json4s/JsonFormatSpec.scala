@@ -12,7 +12,7 @@ import org.json4s.jackson.JsonMethods._
 import org.json4s.{JDouble, JValue}
 import org.scalatest.{Assertion, FlatSpec, MustMatchers, OptionValues}
 
-class JsonFormatSpec extends FlatSpec with MustMatchers with OptionValues {
+class JsonFormatSpec extends FlatSpec with MustMatchers with OptionValues with JavaAssertions {
 
   val TestProto = MyTest().update(
     _.hello := "Foo",
@@ -442,6 +442,20 @@ class JsonFormatSpec extends FlatSpec with MustMatchers with OptionValues {
     parser.fromJsonString[MyTest]("""{"random_field_123": 3}""")
     // There is special for @type field for anys, lets make sure they get rejected too
     parser.fromJsonString[MyTest]("""{"@type": "foo"}""")
+  }
+
+  "booleans" should "be accepted as string" in {
+    // Java does it
+    val optBoolTrue = """{"optBool": "true"}"""
+    val optBoolFalse = """{"optBool": "false"}"""
+    javaParse(optBoolTrue, jsontest.Test.MyTest.newBuilder).toString must be("opt_bool: true\n")
+    javaParse(optBoolFalse, jsontest.Test.MyTest.newBuilder).toString must be("opt_bool: false\n")
+    JsonFormat.fromJsonString[MyTest]("""{"optBool": "true"}""") must be(
+      MyTest(optBool = Some(true))
+    )
+    JsonFormat.fromJsonString[MyTest]("""{"optBool": "false"}""") must be(
+      MyTest(optBool = Some(false))
+    )
   }
 
 }
