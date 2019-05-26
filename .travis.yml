@@ -7,4 +7,7 @@ scala:
    - 2.13.0-RC1
 
 script:
-- sbt ++$TRAVIS_SCALA_VERSION test proto26:test mimaReportBinaryIssues
+- sbt ++$TRAVIS_SCALA_VERSION test proto26:test
+- if [[ "$TRAVIS_SCALA_VERSION" != 2.13.0-* ]]; then
+    sbt ++$TRAVIS_SCALA_VERSION mimaReportBinaryIssues;
+  fi
