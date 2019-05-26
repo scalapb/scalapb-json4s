@@ -40,7 +40,7 @@ releaseProcess := Seq[ReleaseStep](
 libraryDependencies ++= Seq(
   "com.thesamet.scalapb" %% "scalapb-runtime" % scalapbVersion,
   "com.thesamet.scalapb" %% "scalapb-runtime" % scalapbVersion % "protobuf,test",
-  "org.json4s" %% "json4s-jackson" % "3.6.5",
+  "org.json4s" %% "json4s-jackson" % "3.6.6",
   "org.scalatest" %% "scalatest" % "3.0.8-RC3" % "test",
   "org.scalacheck" %% "scalacheck" % "1.14.0" % "test",
   "com.google.protobuf" % "protobuf-java-util" % "3.7.1" % "test",
