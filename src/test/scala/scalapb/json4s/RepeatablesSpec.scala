@@ -1,12 +1,12 @@
-package scalapb.json4s
 
 import scalapb.e2e.repeatables.RepeatablesTest
 import scalapb.e2e.repeatables.RepeatablesTest.Nested
 import org.scalatest._
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 import org.scalacheck.{Arbitrary, Gen}
+import scalapb.json4s.JsonFormat
 
-class ArbitrarySpec extends FlatSpec with ScalaCheckDrivenPropertyChecks with MustMatchers {
+class JsonSpec extends FlatSpec with ScalaCheckDrivenPropertyChecks with MustMatchers {
 
   val nestedGen =
     Arbitrary.arbitrary[Option[Int]].map(s => Nested(nestedField = s))
