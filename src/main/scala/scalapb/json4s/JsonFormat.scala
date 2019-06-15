@@ -496,6 +496,10 @@ object JsonFormat {
     }
   }
 
+  @deprecated("Use parsePrimitive(protoType, value, onError) instead.", "0.9.0")
+  def parsePrimitive(scalaType: ScalaType, protoType: FieldDescriptorProto.Type, value: JValue, onError: => PValue): PValue =
+    parsePrimitive(protoType, value, onError)
+
   def parsePrimitive(protoType: FieldDescriptorProto.Type, value: JValue, onError: => PValue): PValue = (protoType, value) match {
     case (Type.TYPE_UINT32 | Type.TYPE_FIXED32, JInt(x)) => parseUint32(x.toString)
     case (Type.TYPE_UINT32 | Type.TYPE_FIXED32, JDouble(x)) => parseUint32(x.toString)
