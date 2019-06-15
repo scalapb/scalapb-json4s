@@ -1,5 +1,7 @@
 package scalapb.json4s
 
+import java.math.BigInteger
+
 import com.google.protobuf.InvalidProtocolBufferException
 import com.google.protobuf.any.{Any => PBAny}
 import com.google.protobuf.util.JsonFormat.{TypeRegistry => JavaTypeRegistry}
@@ -345,40 +347,122 @@ class JsonFormatSpec extends FlatSpec with MustMatchers with OptionValues with J
     new Parser().fromJsonString[MyTest](PreservedTestJson) must be (TestProto)
   }
 
-  "DoubleFloatProto" should "parse NaNs" in {
+  "TestAllTypesProto" should "parse NaNs" in {
     val i = s"""{
-      "d": "NaN",
-      "f": "NaN"
+      "optionalDouble": "NaN",
+      "optionalFloat": "NaN"
     }"""
-    val out = JsonFormat.fromJsonString[DoubleFloat](i)
-    out.d.value.isNaN must be (true)
-    out.f.value.isNaN must be (true)
-    (JsonFormat.toJson(out) \ "d").asInstanceOf[JDouble].num.isNaN must be(true)
-    (JsonFormat.toJson(out) \ "f").asInstanceOf[JDouble].num.isNaN must be(true)
+    val out = JsonFormat.fromJsonString[TestAllTypes](i)
+    out.optionalDouble.value.isNaN must be (true)
+    out.optionalFloat.value.isNaN must be (true)
+    (JsonFormat.toJson(out) \ "optionalDouble").asInstanceOf[JDouble].num.isNaN must be(true)
+    (JsonFormat.toJson(out) \ "optionalFloat").asInstanceOf[JDouble].num.isNaN must be(true)
   }
 
-  "DoubleFloatProto" should "parse Infinity" in {
+  "TestAllTypesProto" should "parse Infinity" in {
     val i = s"""{
-      "d": "Infinity",
-      "f": "Infinity"
+      "optionalDouble": "Infinity",
+      "optionalFloat": "Infinity"
     }"""
-    val out = JsonFormat.fromJsonString[DoubleFloat](i)
-    out.d.value.isPosInfinity must be (true)
-    out.f.value.isPosInfinity must be (true)
-    (JsonFormat.toJson(out) \ "d") must be (JDouble(Double.PositiveInfinity))
-    (JsonFormat.toJson(out) \ "f") must be (JDouble(Double.PositiveInfinity))
+    val out = JsonFormat.fromJsonString[TestAllTypes](i)
+    out.optionalDouble.value.isPosInfinity must be (true)
+    out.optionalFloat.value.isPosInfinity must be (true)
+    (JsonFormat.toJson(out) \ "optionalDouble") must be (JDouble(Double.PositiveInfinity))
+    (JsonFormat.toJson(out) \ "optionalFloat") must be (JDouble(Double.PositiveInfinity))
   }
 
-  "DoubleFloatProto" should "parse -Infinity" in {
+  "TestAllTypesProto" should "parse -Infinity" in {
     val i = s"""{
-      "d": "-Infinity",
-      "f": "-Infinity"
+      "optionalDouble": "-Infinity",
+      "optionalFloat": "-Infinity"
     }"""
-    val out = JsonFormat.fromJsonString[DoubleFloat](i)
-    out.d.value.isNegInfinity must be (true)
-    out.f.value.isNegInfinity must be (true)
-    (JsonFormat.toJson(out) \ "d") must be (JDouble(Double.NegativeInfinity))
-    (JsonFormat.toJson(out) \ "f") must be (JDouble(Double.NegativeInfinity))
+    val out = JsonFormat.fromJsonString[TestAllTypes](i)
+    out.optionalDouble.value.isNegInfinity must be (true)
+    out.optionalFloat.value.isNegInfinity must be (true)
+    (JsonFormat.toJson(out) \ "optionalDouble") must be (JDouble(Double.NegativeInfinity))
+    (JsonFormat.toJson(out) \ "optionalFloat") must be (JDouble(Double.NegativeInfinity))
+  }
+
+  "TestAllTypesProto" should "take strings" in {
+    val i = s"""{
+      "optionalDouble": "1.4",
+      "optionalFloat": "1.4"
+    }"""
+    val out = JsonFormat.fromJsonString[TestAllTypes](i)
+    out.optionalDouble.value must be(1.4)
+    out.optionalFloat.value must be(1.4f)
+    (JsonFormat.toJson(out) \ "optionalDouble") must be (JDouble(1.4))
+    ((JsonFormat.toJson(out) \ "optionalFloat").asInstanceOf[JDouble].num - 1.4).abs must be<=(0.001)
+  }
+
+  def assertAcceptsQuotes(field: String, value: String): Unit = {
+    JsonFormat.fromJsonString[TestAllTypes](s"""{"$field": "$value"}""")
+  }
+
+  def assertAcceptsNoQuotes(field: String, value: String): Unit = {
+    JsonFormat.fromJsonString[TestAllTypes](s"""{"$field": $value}""")
+  }
+
+  def assertAccepts(field: String, value: String): Unit = {
+    assertAcceptsQuotes(field, value)
+    assertAcceptsNoQuotes(field, value)
+  }
+
+  def assertRejectsNoQuotes(field: String, value: String): Unit = {
+    assertThrows[JsonFormatException] {
+      JsonFormat.fromJsonString[TestAllTypes](s"""{"$field": $value}""")
+    }
+  }
+
+  def assertRejectsQuotes(field: String, value: String): Unit = {
+    assertThrows[JsonFormatException] {
+      JsonFormat.fromJsonString[TestAllTypes](s"""{"$field": "$value"}""")
+    }
+  }
+
+  def assertRejects(field: String, value: String): Unit = {
+    assertRejectsNoQuotes(field, value)
+    assertRejectsQuotes(field, value)
+  }
+
+  "parser" should "reject out of range numeric values" in {
+    assertAccepts("optionalInt32", String.valueOf(Integer.MAX_VALUE))
+    assertAccepts("optionalInt32", String.valueOf(Integer.MIN_VALUE))
+    assertRejects("optionalInt32", String.valueOf(Integer.MAX_VALUE + 1L))
+    assertRejects("optionalInt32", String.valueOf(Integer.MIN_VALUE - 1L))
+
+    assertAccepts("optionalUint32", String.valueOf(Integer.MAX_VALUE + 1L))
+    assertRejects("optionalUint32", "123456789012345")
+    assertRejects("optionalUint32", "-1")
+
+    val one = new BigInteger("1")
+    val maxLong = new BigInteger(String.valueOf(Long.MaxValue))
+    val minLong = new BigInteger(String.valueOf(Long.MinValue))
+    assertAccepts("optionalInt64", maxLong.toString)
+    assertAccepts("optionalInt64", minLong.toString)
+    assertRejects("optionalInt64", maxLong.add(one).toString)
+    assertRejects("optionalInt64", minLong.subtract(one).toString)
+
+    assertAccepts("optionalUint64", maxLong.add(one).toString)
+    assertRejects("optionalUint64", "1234567890123456789012345")
+    assertRejects("optionalUint64", "-1")
+
+    assertAccepts("optionalBool", "true")
+    assertRejects("optionalBool", "1")
+    assertRejects("optionalBool", "0")
+
+    assertAccepts("optionalFloat", String.valueOf(Float.MaxValue))
+    assertAccepts("optionalFloat", String.valueOf(-Float.MaxValue))
+    assertRejects("optionalFloat", String.valueOf(Double.MaxValue))
+    assertRejects("optionalFloat", String.valueOf(-Double.MaxValue))
+
+    val moreThanOne = new java.math.BigDecimal("1.000001")
+    val maxDouble = new java.math.BigDecimal(Double.MaxValue)
+    val minDouble = new java.math.BigDecimal(-Double.MaxValue)
+    assertAccepts("optionalDouble", maxDouble.toString)
+    assertAccepts("optionalDouble", minDouble.toString)
+    assertRejects("optionalDouble", (maxDouble.multiply(moreThanOne).toString))
+    assertRejects("optionalDouble", (minDouble.multiply(moreThanOne).toString))
   }
 
   val anyEnabledJavaTypeRegistry = JavaTypeRegistry.newBuilder().add(TestProto.companion.javaDescriptor).build()

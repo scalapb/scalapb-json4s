@@ -15,7 +15,10 @@ import scala.collection.mutable
 import scala.language.existentials
 import scala.reflect.ClassTag
 import _root_.scalapb.descriptors._
+import com.google.protobuf.descriptor.FieldDescriptorProto.Type
 import com.google.protobuf.field_mask.FieldMask
+
+import scala.util.Try
 
 case class JsonFormatException(msg: String, cause: Exception) extends Exception(msg, cause) {
   def this(msg: String) = this(msg, null)
@@ -306,7 +309,7 @@ class Parser private (config: Parser.ParserConfig) {
 
   def fromJsonString[A <: GeneratedMessage with Message[A] : GeneratedMessageCompanion](str: String): A = {
     import org.json4s.jackson.JsonMethods._
-    fromJson(parse(str))
+    fromJson(parse(str, useBigDecimalForDouble = true))
   }
 
   def fromJson[A <: GeneratedMessage with Message[A] : GeneratedMessageCompanion](value: JValue): A = {
@@ -398,7 +401,7 @@ class Parser private (config: Parser.ParserConfig) {
       })
     case ScalaType.Message(md) =>
       fromJsonToPMessage(containerCompanion.messageCompanionForFieldNumber(fd.number), value, false)
-    case st => JsonFormat.parsePrimitive(st, fd.protoType, value,
+    case st => JsonFormat.parsePrimitive(fd.protoType, value,
       throw new JsonFormatException(
         s"Unexpected value ($value) for field ${fd.name} of ${fd.containingMessage.name}"))
   }
@@ -444,11 +447,12 @@ object JsonFormat {
     val fieldDesc = cmp.scalaDescriptor.findFieldByNumber(1).get
     (printer, t) => printer.serializeSingleValue(fieldDesc, t.getField(fieldDesc), formattingLongAsNumber = false)
   }
+  String.valueOf()
 
   def primitiveWrapperParser[T <: GeneratedMessage with Message[T]](implicit cmp: GeneratedMessageCompanion[T]): ((Parser, JValue) => T) = {
     val fieldDesc = cmp.scalaDescriptor.findFieldByNumber(1).get
     (parser, jv) => cmp.messageReads.read(PMessage(Map(fieldDesc -> JsonFormat.parsePrimitive(
-      fieldDesc.scalaType, fieldDesc.protoType, jv, throw new JsonFormatException(s"Unexpected value for ${cmp.scalaDescriptor.name}")))))
+      fieldDesc.protoType, jv, throw new JsonFormatException(s"Unexpected value for ${cmp.scalaDescriptor.name}")))))
   }
 
   val printer = new Printer()
@@ -492,36 +496,38 @@ object JsonFormat {
     }
   }
 
-  def parsePrimitive(scalaType: ScalaType, protoType: FieldDescriptorProto.Type, value: JValue, onError: => PValue): PValue = (scalaType, value) match {
-    case (ScalaType.Int, JInt(x)) => PInt(x.intValue)
-    case (ScalaType.Int, JDouble(x)) => PInt(x.intValue)
-    case (ScalaType.Int, JDecimal(x)) => PInt(x.intValue)
-    case (ScalaType.Int, JString(x)) if protoType.isTypeInt32 => parseInt32(x)
-    case (ScalaType.Int, JString(x)) if protoType.isTypeSint32 => parseInt32(x)
-    case (ScalaType.Int, JString(x)) => parseUint32(x)
-    case (ScalaType.Long, JLong(x)) => PLong(x.toLong)
-    case (ScalaType.Long, JDecimal(x)) => PLong(x.longValue)
-    case (ScalaType.Long, JString(x)) if protoType.isTypeInt64 => parseInt64(x)
-    case (ScalaType.Long, JString(x)) if protoType.isTypeSint64 => parseInt64(x)
-    case (ScalaType.Long, JString(x)) => parseUint64(x)
-    case (ScalaType.Long, JInt(x)) => PLong(x.toLong)
-    case (ScalaType.Double, JDouble(x)) => PDouble(x)
-    case (ScalaType.Double, JInt(x)) => PDouble(x.toDouble)
-    case (ScalaType.Double, JDecimal(x)) => PDouble(x.toDouble)
-    case (ScalaType.Double, JString("NaN")) => PDouble(Double.NaN)
-    case (ScalaType.Double, JString("Infinity")) => PDouble(Double.PositiveInfinity)
-    case (ScalaType.Double, JString("-Infinity")) => PDouble(Double.NegativeInfinity)
-    case (ScalaType.Float, JDouble(x)) => PFloat(x.toFloat)
-    case (ScalaType.Float, JInt(x)) => PFloat(x.toFloat)
-    case (ScalaType.Float, JDecimal(x)) => PFloat(x.toFloat)
-    case (ScalaType.Float, JString("NaN")) => PFloat(Float.NaN)
-    case (ScalaType.Float, JString("Infinity")) => PFloat(Float.PositiveInfinity)
-    case (ScalaType.Float, JString("-Infinity")) => PFloat(Float.NegativeInfinity)
-    case (ScalaType.Boolean, JBool(b)) => PBoolean(b)
-    case (ScalaType.Boolean, JString("true")) => PBoolean(true)
-    case (ScalaType.Boolean, JString("false")) => PBoolean(false)
-    case (ScalaType.String, JString(s)) => PString(s)
-    case (ScalaType.ByteString, JString(s)) =>
+  def parsePrimitive(protoType: FieldDescriptorProto.Type, value: JValue, onError: => PValue): PValue = (protoType, value) match {
+    case (Type.TYPE_UINT32 | Type.TYPE_FIXED32, JInt(x)) => parseUint32(x.toString)
+    case (Type.TYPE_UINT32 | Type.TYPE_FIXED32, JDouble(x)) => parseUint32(x.toString)
+    case (Type.TYPE_UINT32 | Type.TYPE_FIXED32, JDecimal(x)) => parseUint32(x.toString)
+    case (Type.TYPE_UINT32 | Type.TYPE_FIXED32, JString(x)) => parseUint32(x.toString)
+    case (Type.TYPE_SINT32 | Type.TYPE_INT32 | Type.TYPE_SFIXED32, JInt(x)) => parseInt32(x.toString)
+    case (Type.TYPE_SINT32 | Type.TYPE_INT32 | Type.TYPE_SFIXED32, JDouble(x)) => parseInt32(x.toString)
+    case (Type.TYPE_SINT32 | Type.TYPE_INT32 | Type.TYPE_SFIXED32, JDecimal(x)) => parseInt32(x.toString)
+    case (Type.TYPE_SINT32 | Type.TYPE_INT32 | Type.TYPE_SFIXED32, JString(x)) => parseInt32(x.toString)
+
+    case (Type.TYPE_UINT64 | Type.TYPE_FIXED64, JInt(x)) => parseUint64(x.toString)
+    case (Type.TYPE_UINT64 | Type.TYPE_FIXED64, JDouble(x)) => parseUint64(x.toString)
+    case (Type.TYPE_UINT64 | Type.TYPE_FIXED64, JDecimal(x)) => parseUint64(x.toString)
+    case (Type.TYPE_UINT64 | Type.TYPE_FIXED64, JString(x)) => parseUint64(x.toString)
+    case (Type.TYPE_SINT64 | Type.TYPE_INT64 | Type.TYPE_SFIXED64, JInt(x)) => parseInt64(x.toString)
+    case (Type.TYPE_SINT64 | Type.TYPE_INT64 | Type.TYPE_SFIXED64, JDouble(x)) => parseInt64(x.toString)
+    case (Type.TYPE_SINT64 | Type.TYPE_INT64 | Type.TYPE_SFIXED64, JDecimal(x)) => parseInt64(x.toString)
+    case (Type.TYPE_SINT64 | Type.TYPE_INT64 | Type.TYPE_SFIXED64, JString(x)) => parseInt64(x.toString)
+
+    case (Type.TYPE_DOUBLE, JDouble(x)) => parseDouble(x.toString)
+    case (Type.TYPE_DOUBLE, JInt(x)) => parseDouble(x.toString)
+    case (Type.TYPE_DOUBLE, JDecimal(x)) => parseDouble(x.toString)
+    case (Type.TYPE_DOUBLE, JString(v)) => parseDouble(v)
+    case (Type.TYPE_FLOAT, JDouble(x)) => parseFloat(x.toString)
+    case (Type.TYPE_FLOAT, JInt(x)) => parseFloat(x.toString)
+    case (Type.TYPE_FLOAT, JDecimal(x)) => parseFloat(x.toString)
+    case (Type.TYPE_FLOAT, JString(v)) => parseFloat(v)
+    case (Type.TYPE_BOOL, JBool(b)) => PBoolean(b)
+    case (Type.TYPE_BOOL, JString("true")) => PBoolean(true)
+    case (Type.TYPE_BOOL, JString("false")) => PBoolean(false)
+    case (Type.TYPE_STRING, JString(s)) => PString(s)
+    case (Type.TYPE_BYTES, JString(s)) =>
       PByteString(ByteString.copyFrom(Base64Variants.getDefaultVariant.decode(s)))
     case _ => onError
   }
@@ -592,6 +598,43 @@ object JsonFormat {
     }
   }
 
+  def parseDouble(value: String): PDouble = value match {
+    case "NaN" => PDouble(Double.NaN)
+    case "Infinity" => PDouble(Double.PositiveInfinity)
+    case "-Infinity" => PDouble(Double.NegativeInfinity)
+    case v =>
+      try {
+        val bd = new java.math.BigDecimal(v)
+        if (bd.compareTo(MAX_DOUBLE) > 0 || bd.compareTo(MIN_DOUBLE) < 0) {
+          throw new JsonFormatException("Out of range double value: " + v)
+        }
+        PDouble(bd.doubleValue)
+      } catch {
+        case e: JsonFormatException => throw e
+        case e: Exception =>
+          throw new JsonFormatException("Not a double value: " + v)
+      }
+  }
+
+  def parseFloat(str: String): PFloat = str match {
+    case "NaN" => PFloat(Float.NaN)
+    case "Infinity" => PFloat(Float.PositiveInfinity)
+    case "-Infinity" => PFloat(Float.NegativeInfinity)
+    case v =>
+      try {
+        val value = java.lang.Double.parseDouble(v)
+        if ((value > Float.MaxValue * (1.0 + EPSILON)) ||
+          (value < -Float.MaxValue * (1.0 + EPSILON))) {
+            throw new JsonFormatException("Out of range float value: " + value)
+          }
+        PFloat(value.toFloat)
+      } catch {
+        case e: JsonFormatException => throw e
+        case e: Exception =>
+          throw new JsonFormatException("Not a float value: " + v)
+      }
+  }
+
   def jsonName(fd: FieldDescriptor): String = {
     // protoc<3 doesn't know about json_name, so we fill it in if it's not populated.
     fd.asProto.jsonName.getOrElse(NameUtils.snakeCaseToCamelCase(fd.asProto.getName))
@@ -618,4 +661,12 @@ object JsonFormat {
     }
   }
 
+  // From protobuf-java's JsonFormat.java:
+  val EPSILON: Double = 1e-6
+
+  val MORE_THAN_ONE = new java.math.BigDecimal(String.valueOf(1.toDouble + EPSILON))
+
+  val MAX_DOUBLE = new java.math.BigDecimal(String.valueOf(Double.MaxValue)).multiply(MORE_THAN_ONE)
+
+  val MIN_DOUBLE = new java.math.BigDecimal(String.valueOf(Double.MinValue)).multiply(MORE_THAN_ONE)
 }
