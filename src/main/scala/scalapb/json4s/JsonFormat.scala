@@ -447,7 +447,6 @@ object JsonFormat {
     val fieldDesc = cmp.scalaDescriptor.findFieldByNumber(1).get
     (printer, t) => printer.serializeSingleValue(fieldDesc, t.getField(fieldDesc), formattingLongAsNumber = false)
   }
-  String.valueOf()
 
   def primitiveWrapperParser[T <: GeneratedMessage with Message[T]](implicit cmp: GeneratedMessageCompanion[T]): ((Parser, JValue) => T) = {
     val fieldDesc = cmp.scalaDescriptor.findFieldByNumber(1).get
