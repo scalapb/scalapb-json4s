@@ -2,7 +2,7 @@ package scalapb.json4s
 
 import com.google.protobuf.ByteString
 import jsontest.test3._
-import org.json4s.JsonAST.{JBool, JDouble, JString}
+import org.json4s.JsonAST.{JBool, JDecimal, JDouble, JString}
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
 import org.json4s.{JInt, JValue}
@@ -18,7 +18,7 @@ class PrimitiveWrappersSpec extends FlatSpec with MustMatchers {
     JsonFormat.toJson(Wrapper(wBool = Some(false)))   must be (render(Map("wBool" -> JBool(false))))
     JsonFormat.toJson(Wrapper(wBool = Some(true)))    must be (render(Map("wBool" -> JBool(true))))
     JsonFormat.toJson(Wrapper(wDouble = Some(3.1)))   must be (render(Map("wDouble" -> JDouble(3.1))))
-    JsonFormat.toJson(Wrapper(wFloat = Some(3.0f)))   must be (render(Map("wFloat" -> JDouble(3.0))))
+    JsonFormat.toJson(Wrapper(wFloat = Some(3.0f)))   must be (render(Map("wFloat" -> JDecimal(3.0))))
     JsonFormat.toJson(Wrapper(wInt32 = Some(35544)))  must be (render(Map("wInt32" -> JInt(35544))))
     JsonFormat.toJson(Wrapper(wInt32 = Some(0)))      must be (render(Map("wInt32" -> JInt(0))))
     JsonFormat.toJson(Wrapper(wInt64 = Some(125)))    must be (render(Map("wInt64" -> JString("125"))))
@@ -37,6 +37,7 @@ class PrimitiveWrappersSpec extends FlatSpec with MustMatchers {
     JsonFormat.fromJson[Wrapper](render(Map("wBool" -> JBool(true))))     must be (Wrapper(wBool = Some(true)))
     JsonFormat.fromJson[Wrapper](render(Map("wDouble" -> JDouble(3.1))))  must be (Wrapper(wDouble = Some(3.1)))
     JsonFormat.fromJson[Wrapper](render(Map("wDouble" -> JString("3.1"))))  must be (Wrapper(wDouble = Some(3.1)))
+    JsonFormat.fromJson[Wrapper](render(Map("wFloat" -> JDecimal(3.0))))   must be (Wrapper(wFloat = Some(3.0f)))
     JsonFormat.fromJson[Wrapper](render(Map("wFloat" -> JDouble(3.0))))   must be (Wrapper(wFloat = Some(3.0f)))
     JsonFormat.fromJson[Wrapper](render(Map("wInt32" -> JInt(35544))))    must be (Wrapper(wInt32 = Some(35544)))
     JsonFormat.fromJson[Wrapper](render(Map("wInt32" -> JInt(0))))        must be (Wrapper(wInt32 = Some(0)))
