@@ -37,4 +37,9 @@ trait JavaAssertions {
     JavaJsonParser.merge(json, b)
     b.build()
   }
+
+  def javaFormat[T <: com.google.protobuf.GeneratedMessageV3.Builder[T]](json: String, b: com.google.protobuf.GeneratedMessageV3.Builder[T]) = {
+    JavaJsonParser.merge(json, b)
+    b.build()
+  }
 }

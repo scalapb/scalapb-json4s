@@ -273,7 +273,7 @@ class Printer private(config: Printer.PrinterConfig) {
     case PInt(v) => JInt(v)
     case PLong(v) => formatLong(v, fd.protoType, formattingLongAsNumber)
     case PDouble(v) => JDouble(v)
-    case PFloat(v) => JDouble(v)
+    case PFloat(v) => if (!v.isNaN && !v.isInfinite) JDecimal(BigDecimal.decimal(v)) else JDouble(v)
     case PBoolean(v) => JBool(v)
     case PString(v) => JString(v)
     case PByteString(v) => JString(Base64Variants.getDefaultVariant.encode(v.toByteArray))

@@ -11,7 +11,7 @@ import jsontest.test._
 import jsontest.test3._
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
-import org.json4s.{JDouble, JValue}
+import org.json4s.{JDecimal, JDouble, JValue}
 import org.scalatest.{Assertion, FlatSpec, MustMatchers, OptionValues}
 
 class JsonFormatSpec extends FlatSpec with MustMatchers with OptionValues with JavaAssertions {
@@ -392,7 +392,7 @@ class JsonFormatSpec extends FlatSpec with MustMatchers with OptionValues with J
     out.optionalDouble.value must be(1.4)
     out.optionalFloat.value must be(1.4f)
     (JsonFormat.toJson(out) \ "optionalDouble") must be (JDouble(1.4))
-    ((JsonFormat.toJson(out) \ "optionalFloat").asInstanceOf[JDouble].num - 1.4).abs must be<=(0.001)
+    ((JsonFormat.toJson(out) \ "optionalFloat").asInstanceOf[JDecimal].num - 1.4).abs.toDouble must be<=(0.001)
   }
 
   def assertAcceptsQuotes(field: String, value: String): Unit = {
@@ -542,4 +542,12 @@ class JsonFormatSpec extends FlatSpec with MustMatchers with OptionValues with J
     )
   }
 
+  "floats" should "not lose precision" in {
+    val obj = TestAllTypes(optionalFloat=Some(0.41804487f))
+    val javaJson = JavaJsonFormat.printer().print(TestAllTypes.toJavaProto(obj))
+    val scalaJson = JsonFormat.toJson(obj)
+    scalaJson must be(parse(javaJson, useBigDecimalForDouble = true))
+
+    JsonFormat.parser.fromJsonString[TestAllTypes](javaJson) must be(obj)
+  }
 }
