@@ -7,4 +7,4 @@ addSbtPlugin("org.xerial.sbt" % "sbt-sonatype" % "2.5")
 addSbtPlugin("com.thesamet" % "sbt-protoc" % "0.99.23")
 libraryDependencies += "com.thesamet.scalapb" %% "compilerplugin" % "0.9.1"
 
-addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.6.0")
+addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.6.1")
