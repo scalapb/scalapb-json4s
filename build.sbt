@@ -18,7 +18,7 @@ scalacOptions in ThisBuild ++= {
 
 releaseCrossBuild := true
 
-publishTo := sonatypePublishTo.value
+publishTo in ThisBuild := sonatypePublishToBundle.value
 
 releasePublishArtifactsAction := PgpKeys.publishSigned.value
 
@@ -31,9 +31,9 @@ releaseProcess := Seq[ReleaseStep](
   commitReleaseVersion,
   tagRelease,
   releaseStepCommandAndRemaining("+publishSigned"),
+  releaseStepCommand(s"sonatypeBundleRelease"),
   setNextVersion,
   commitNextVersion,
-  releaseStepCommand("sonatypeReleaseAll"),
   pushChanges,
 )
 
