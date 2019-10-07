@@ -388,15 +388,16 @@ class Parser private (config: Parser.ParserConfig) {
     value match {
       case JInt(v) =>
         enumDescriptor.findValueByNumber(v.toInt)
-          .orElse(enumDescriptor.findValueByNumber(0))
-          .getOrElse(throw new JsonFormatException(s"Invalid enum value: ${v.toInt} for enum type: ${enumDescriptor.fullName}"))
+          .getOrElse(enumDescriptor.findValueByNumberCreatingIfUnknown(0))
+      case JString(s) if config.isIgnoringUnknownFields =>
+        enumDescriptor.values.find(_.name == s)
+          .getOrElse(NullValue.NULL_VALUE.scalaValueDescriptor)
       case JString(s) =>
         enumDescriptor.values.find(_.name == s)
-          .orElse(enumDescriptor.findValueByNumber(0))
           .getOrElse(throw new JsonFormatException(s"Unrecognized enum value '${s}'"))
-      case _ =>
-        throw new JsonFormatException(
-          s"Unexpected value ($value) for enum ${enumDescriptor.fullName}")
+      case _ => {
+          throw new JsonFormatException(s"Unexpected value ($value) for enum ${enumDescriptor.fullName}")
+      }
     }
   }
 

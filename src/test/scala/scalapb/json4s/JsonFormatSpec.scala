@@ -349,10 +349,19 @@ class JsonFormatSpec extends FlatSpec with MustMatchers with OptionValues with J
     new Parser().fromJsonString[MyTest]("""{"opt_enum":10}""") must be(MyTest(optEnum = Some(MyEnum.UNKNOWN)))
   }
 
-  "TestProto" should "fail when default value not present" in {
+  "TestProto" should "return `Unrecognized` when 0-index enum is not present" in {
+    new Parser().fromJsonString[MyTest]("""{"enum_no_default":10}""") must be(MyTest(enumNoDefault = Some(MyEnumWithoutDefault.Unrecognized(0))))
+  }
+
+  "TestProto" should "fail for unknown string enum value" in {
     assertThrows[JsonFormatException](
-      new Parser().fromJsonString[MyTest]("""{"enum_no_default":10}""")
+      new Parser().fromJsonString[MyTest]("""{"opt_enum":"ZAZA"}""")
     )
+  }
+
+  "TestProto" should "not fail for unknown enum values when `ignoringUnknownFields` is set" in {
+      new Parser().ignoringUnknownFields
+        .fromJsonString[MyTest]("""{"opt_enum":"ZAZA"}""")  must be(MyTest(optEnum = Some(MyEnum.UNKNOWN)))
   }
 
   "PreservedTestJson" should "be TestProto when parsed from json" in {
