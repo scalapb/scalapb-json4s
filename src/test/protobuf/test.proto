@@ -12,6 +12,11 @@ enum MyEnum {
   V2 = 2;
 }
 
+enum MyEnumWithoutDefault {
+  A1 = 1;
+  A2 = 2;
+}
+
 message MyTest {
   optional string hello = 1;
   optional int32 foobar = 2;
@@ -37,6 +42,7 @@ message MyTest {
   }
 
   map<fixed64, bytes> fixed64_to_bytes = 18;
+  optional MyEnumWithoutDefault enum_no_default = 19;
 
 }
 

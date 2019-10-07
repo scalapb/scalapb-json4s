@@ -223,7 +223,8 @@ class JsonFormatSpec extends FlatSpec with MustMatchers with OptionValues with J
           |  "stringToBool": {},
           |  "optBs": "",
           |  "optBool": false,
-          |  "fixed64ToBytes": {}
+          |  "fixed64ToBytes": {},
+          |  "enumNoDefault": "A1"
           |}""".stripMargin)
     )
   }
@@ -246,7 +247,8 @@ class JsonFormatSpec extends FlatSpec with MustMatchers with OptionValues with J
           |  "string_to_bool": {},
           |  "opt_bs": "",
           |  "opt_bool": false,
-          |  "fixed64_to_bytes": {}
+          |  "fixed64_to_bytes": {},
+          |  "enum_no_default": "A1"
           |}""".stripMargin)
     )
   }
@@ -341,6 +343,16 @@ class JsonFormatSpec extends FlatSpec with MustMatchers with OptionValues with J
   "TestProto" should "parse original field names" in {
     new Parser().fromJsonString[MyTest]("""{"opt_enum":1}""") must be(MyTest(optEnum = Some(MyEnum.V1)))
     new Parser().fromJsonString[MyTest]("""{"opt_enum":2}""") must be(MyTest(optEnum = Some(MyEnum.V2)))
+  }
+
+  "TestProto" should "infer default value when present" in {
+    new Parser().fromJsonString[MyTest]("""{"opt_enum":10}""") must be(MyTest(optEnum = Some(MyEnum.UNKNOWN)))
+  }
+
+  "TestProto" should "fail when default value not present" in {
+    assertThrows[JsonFormatException](
+      new Parser().fromJsonString[MyTest]("""{"enum_no_default":10}""")
+    )
   }
 
   "PreservedTestJson" should "be TestProto when parsed from json" in {
