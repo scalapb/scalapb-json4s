@@ -623,44 +623,24 @@ class JsonFormatSpec
     )
   }
 
-  "unknown fields" should "get rejected" in {
-    intercept[InvalidProtocolBufferException] {
-      JavaJsonFormat
-        .parser()
-        .merge("""{"random_field_123": 3}""", jsontest.Test.MyTest.newBuilder)
-    }
-    intercept[JsonFormatException] {
-      JsonFormat.fromJsonString[MyTest]("""{"random_field_123": 3}""")
-    }
+  "unknown fields" should "get rejected" in new DefaultParserContext {
+    assertFails("""{"random_field_123": 3}""", MyTest)
     // There is special for @type field for anys, lets make sure they get rejected too
-    intercept[JsonFormatException] {
-      JsonFormat.fromJsonString[MyTest]("""{"@type": "foo"}""")
-    }
+    assertFails("""{"@type": "foo"}""", MyTest)
   }
 
-  "unknown fields" should "not get rejected when ignoreUnknownFields is set" in {
-    val parser = new Parser().ignoringUnknownFields
-    parser.fromJsonString[MyTest]("""{"random_field_123": 3}""")
+  "unknown fields" should "not get rejected when ignoreUnknownFields is set" in new IgnoringUnkownParserContext {
+    assertParse("""{"random_field_123": 3}""", MyTest())
     // There is special for @type field for anys, lets make sure they get rejected too
-    parser.fromJsonString[MyTest]("""{"@type": "foo"}""")
+    assertParse("""{"@type": "foo"}""", MyTest())
   }
 
-  "booleans" should "be accepted as string" in {
+  "booleans" should "be accepted as string" in new DefaultParserContext {
     // Java does it
     val optBoolTrue = """{"optBool": "true"}"""
     val optBoolFalse = """{"optBool": "false"}"""
-    javaParse(optBoolTrue, jsontest.Test.MyTest.newBuilder).toString must be(
-      "opt_bool: true\n"
-    )
-    javaParse(optBoolFalse, jsontest.Test.MyTest.newBuilder).toString must be(
-      "opt_bool: false\n"
-    )
-    JsonFormat.fromJsonString[MyTest]("""{"optBool": "true"}""") must be(
-      MyTest(optBool = Some(true))
-    )
-    JsonFormat.fromJsonString[MyTest]("""{"optBool": "false"}""") must be(
-      MyTest(optBool = Some(false))
-    )
+    assertParse(optBoolTrue, MyTest(optBool = Some(true)))
+    assertParse(optBoolFalse, MyTest(optBool = Some(false)))
   }
 
   "floats" should "not lose precision" in {

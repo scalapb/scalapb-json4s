@@ -96,30 +96,29 @@ class StructFormatSpec extends FlatSpec with MustMatchers with JavaAssertions {
     assertJsonIsSameAsJava(ListValueExample)
   }
 
-  "NullValue" should "be serialized and parsed from JSON correctly" in {
-    javaParse("""{"nv": 0}""", jsontest.Test3.StructTest.newBuilder).toString must be(
-      ""
-    )
-    javaParse("""{"repNv": [0,0.0,0]}""", jsontest.Test3.StructTest.newBuilder).toString must be(
-      "rep_nv: NULL_VALUE\n" * 3
-    )
-    assertJsonIsSameAsJava(StructTest())
-    assertJsonIsSameAsJava(StructTest(nv = NullValue.NULL_VALUE))
-    assertJsonIsSameAsJava(
-      StructTest(repNv = Seq(NullValue.NULL_VALUE, NullValue.NULL_VALUE))
-    )
-    JsonFormat.fromJsonString[StructTest]("""{"nv": null}""") must be(
-      StructTest()
-    )
-    JsonFormat.fromJsonString[StructTest]("""{"nv": "NULL_VALUE"}""") must be(
-      StructTest()
-    )
-    JsonFormat.fromJsonString[StructTest]("""{"nv": 0}""") must be(StructTest())
-    JsonFormat.fromJsonString[StructTest]("""{"repNv": [null, 0, null]}""") must be(
+  "NullValue" should "be serialized and parsed from JSON correctly" in new DefaultParserContext {
+    assertParse("""{"nv": 0}""", StructTest())
+    assertParse("""{"nv": null}""", StructTest())
+    assertParse("""{"nv": "NULL_VALUE"}""", StructTest())
+    assertParse(
+      """{"repNv": [0,0.0,0]}""",
       StructTest(
         repNv =
           Seq(NullValue.NULL_VALUE, NullValue.NULL_VALUE, NullValue.NULL_VALUE)
       )
+    )
+    assertParse(
+      """{"repNv": [null,0,null]}""",
+      StructTest(
+        repNv =
+          Seq(NullValue.NULL_VALUE, NullValue.NULL_VALUE, NullValue.NULL_VALUE)
+      )
+    )
+
+    assertJsonIsSameAsJava(StructTest())
+    assertJsonIsSameAsJava(StructTest(nv = NullValue.NULL_VALUE))
+    assertJsonIsSameAsJava(
+      StructTest(repNv = Seq(NullValue.NULL_VALUE, NullValue.NULL_VALUE))
     )
   }
 }

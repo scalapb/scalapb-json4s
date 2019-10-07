@@ -30,9 +30,14 @@ case class Formatter[T](
     parser: (Parser, JValue) => T
 )
 
+case class EnumFormatter[T](
+    writer: (Printer, T) => JValue,
+    parser: (Parser, JValue) => Option[T]
+)
+
 case class FormatRegistry(
     messageFormatters: Map[Class[_], Formatter[_]] = Map.empty,
-    enumFormatters: Map[EnumDescriptor, Formatter[EnumValueDescriptor]] =
+    enumFormatters: Map[EnumDescriptor, EnumFormatter[EnumValueDescriptor]] =
       Map.empty,
     registeredCompanions: Seq[GenericCompanion] = Seq.empty
 ) {
@@ -51,10 +56,10 @@ case class FormatRegistry(
 
   def registerEnumFormatter[E <: GeneratedEnum](
       writer: (Printer, EnumValueDescriptor) => JValue,
-      parser: (Parser, JValue) => EnumValueDescriptor
+      parser: (Parser, JValue) => Option[EnumValueDescriptor]
   )(implicit cmp: GeneratedEnumCompanion[E]): FormatRegistry = {
     copy(
-      enumFormatters = enumFormatters + (cmp.scalaDescriptor -> Formatter(
+      enumFormatters = enumFormatters + (cmp.scalaDescriptor -> EnumFormatter(
         writer,
         parser
       ))
@@ -97,7 +102,7 @@ case class FormatRegistry(
 
   def getEnumParser(
       descriptor: EnumDescriptor
-  ): Option[(Parser, JValue) => EnumValueDescriptor] = {
+  ): Option[(Parser, JValue) => Option[EnumValueDescriptor]] = {
     enumFormatters.get(descriptor).map(_.parser)
   }
 }
@@ -546,25 +551,51 @@ class Parser private (config: Parser.ParserConfig) {
   def defaultEnumParser(
       enumDescriptor: EnumDescriptor,
       value: JValue
-  ): EnumValueDescriptor = value match {
-    case JInt(v) =>
-      enumDescriptor
-        .findValueByNumber(v.toInt)
-        .getOrElse(
-          throw new JsonFormatException(
-            s"Invalid enum value: ${v.toInt} for enum type: ${enumDescriptor.fullName}"
-          )
-        )
-    case JString(s) =>
-      enumDescriptor.values
-        .find(_.name == s)
-        .getOrElse(
-          throw new JsonFormatException(s"Unrecognized enum value '${s}'")
-        )
-    case _ =>
+  ): Option[EnumValueDescriptor] = {
+    def enumValueFromInt(v: Int): Option[EnumValueDescriptor] =
+      if (enumDescriptor.file.isProto3)
+        Some(enumDescriptor.findValueByNumberCreatingIfUnknown(v))
+      else
+        enumDescriptor.findValueByNumber(v)
+
+    def fail() =
       throw new JsonFormatException(
-        s"Unexpected value ($value) for enum ${enumDescriptor.fullName}"
+        s"Invalid enum value: $value for enum type: ${enumDescriptor.fullName}"
       )
+
+    def defaultValue =
+      if (config.isIgnoringUnknownFields && enumDescriptor.file.isProto3)
+        enumDescriptor.findValueByNumber(0)
+      else None
+
+    val res = value match {
+      case JDecimal(v) =>
+        try {
+          enumValueFromInt(v.bigDecimal.intValueExact)
+        } catch {
+          case e: ArithmeticException => defaultValue
+        }
+      case JInt(v) =>
+        enumValueFromInt(v.toInt)
+      case JString(s) =>
+        enumDescriptor.values
+          .find(_.name == s)
+          .orElse {
+            try {
+              enumValueFromInt(s.toInt)
+            } catch {
+              case e: NumberFormatException => None
+            }
+          }
+          .orElse(defaultValue)
+      case _ => fail()
+    }
+
+    if (res.isEmpty && !config.isIgnoringUnknownFields) {
+      fail()
+    }
+
+    res
   }
 
   protected def parseSingleValue(
@@ -572,11 +603,15 @@ class Parser private (config: Parser.ParserConfig) {
       fd: FieldDescriptor,
       value: JValue
   ): PValue = fd.scalaType match {
-    case ScalaType.Enum(ed) =>
-      PEnum(config.formatRegistry.getEnumParser(ed) match {
-        case Some(parser) => parser(this, value)
-        case None         => defaultEnumParser(ed, value)
-      })
+    case ScalaType.Enum(ed) => {
+      val res: Option[EnumValueDescriptor] =
+        config.formatRegistry.getEnumParser(ed) match {
+          case Some(parser) => parser(this, value)
+          case None         => defaultEnumParser(ed, value)
+        }
+
+      res.fold[PValue](PEmpty)(PEnum)
+    }
     case ScalaType.Message(md) =>
       fromJsonToPMessage(
         containerCompanion.messageCompanionForFieldNumber(fd.number),
@@ -666,7 +701,7 @@ object JsonFormat {
       (_, _) => JNull,
       (parser, value) =>
         value match {
-          case JNull => NullValue.NULL_VALUE.scalaValueDescriptor
+          case JNull => Some(NullValue.NULL_VALUE.scalaValueDescriptor)
           case _     => parser.defaultEnumParser(NullValue.scalaDescriptor, value)
         }
     )

@@ -8,7 +8,10 @@ import org.json4s.jackson.JsonMethods._
 import org.json4s.{JInt, JValue}
 import org.scalatest.{FlatSpec, MustMatchers}
 
-class PrimitiveWrappersSpec extends FlatSpec with MustMatchers {
+class PrimitiveWrappersSpec
+    extends FlatSpec
+    with MustMatchers
+    with JavaAssertions {
   "Empty object" should "give empty json for Wrapper" in {
     JsonFormat.toJson(Wrapper()) must be(render(Map.empty[String, JValue]))
   }
@@ -55,50 +58,65 @@ class PrimitiveWrappersSpec extends FlatSpec with MustMatchers {
     )
   }
 
-  "primitive values" should "parse properly" in {
-    JsonFormat.fromJson[Wrapper](render(Map("wBool" -> JBool(false)))) must be(
+  "primitive values" should "parse properly" in new DefaultParserContext {
+    assertParse(
+      compact(render(Map("wBool" -> JBool(false)))),
       Wrapper(wBool = Some(false))
     )
-    JsonFormat.fromJson[Wrapper](render(Map("wBool" -> JBool(true)))) must be(
+    assertParse(
+      compact(render(Map("wBool" -> JBool(true)))),
       Wrapper(wBool = Some(true))
     )
-    JsonFormat.fromJson[Wrapper](render(Map("wDouble" -> JDouble(3.1)))) must be(
+    assertParse(
+      compact(render(Map("wDouble" -> JDouble(3.1)))),
       Wrapper(wDouble = Some(3.1))
     )
-    JsonFormat.fromJson[Wrapper](render(Map("wDouble" -> JString("3.1")))) must be(
+    assertParse(
+      compact(render(Map("wDouble" -> JString("3.1")))),
       Wrapper(wDouble = Some(3.1))
     )
-    JsonFormat.fromJson[Wrapper](render(Map("wFloat" -> JDecimal(3.0)))) must be(
+    assertParse(
+      compact(render(Map("wFloat" -> JDecimal(3.0)))),
       Wrapper(wFloat = Some(3.0f))
     )
-    JsonFormat.fromJson[Wrapper](render(Map("wFloat" -> JDouble(3.0)))) must be(
+    assertParse(
+      compact(render(Map("wFloat" -> JDouble(3.0)))),
       Wrapper(wFloat = Some(3.0f))
     )
-    JsonFormat.fromJson[Wrapper](render(Map("wInt32" -> JInt(35544)))) must be(
+    assertParse(
+      compact(render(Map("wInt32" -> JInt(35544)))),
       Wrapper(wInt32 = Some(35544))
     )
-    JsonFormat.fromJson[Wrapper](render(Map("wInt32" -> JInt(0)))) must be(
+    assertParse(
+      compact(render(Map("wInt32" -> JInt(0)))),
       Wrapper(wInt32 = Some(0))
     )
-    JsonFormat.fromJson[Wrapper](render(Map("wInt64" -> JString("125")))) must be(
+    assertParse(
+      compact(render(Map("wInt64" -> JString("125")))),
       Wrapper(wInt64 = Some(125))
     )
-    JsonFormat.fromJson[Wrapper](render(Map("wUint32" -> JInt(125)))) must be(
+    assertParse(
+      compact(render(Map("wUint32" -> JInt(125)))),
       Wrapper(wUint32 = Some(125))
     )
-    JsonFormat.fromJson[Wrapper](render(Map("wUint64" -> JString("125")))) must be(
+    assertParse(
+      compact(render(Map("wUint64" -> JString("125")))),
       Wrapper(wUint64 = Some(125))
     )
-    JsonFormat.fromJson[Wrapper](render(Map("wString" -> JString("bar")))) must be(
+    assertParse(
+      compact(render(Map("wString" -> JString("bar")))),
       Wrapper(wString = Some("bar"))
     )
-    JsonFormat.fromJson[Wrapper](render(Map("wString" -> JString("")))) must be(
+    assertParse(
+      compact(render(Map("wString" -> JString("")))),
       Wrapper(wString = Some(""))
     )
-    JsonFormat.fromJson[Wrapper](render(Map("wBytes" -> JString("AwUE")))) must be(
+    assertParse(
+      compact(render(Map("wBytes" -> JString("AwUE")))),
       Wrapper(wBytes = Some(ByteString.copyFrom(Array[Byte](3, 5, 4))))
     )
-    JsonFormat.fromJson[Wrapper](render(Map("wBytes" -> JString("")))) must be(
+    assertParse(
+      compact(render(Map("wBytes" -> JString("")))),
       Wrapper(wBytes = Some(ByteString.EMPTY))
     )
   }
