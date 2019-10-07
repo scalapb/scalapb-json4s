@@ -384,22 +384,16 @@ class Parser private (config: Parser.ParserConfig) {
     }
   }
 
-  def defaultEnumParser(enumDescriptor: EnumDescriptor, value: JValue): EnumValueDescriptor = {
-    value match {
-      case JInt(v) =>
-        enumDescriptor.findValueByNumber(v.toInt)
+  def defaultEnumParser(enumDescriptor: EnumDescriptor, value: JValue): EnumValueDescriptor = value match {
+      case JInt(v) => enumDescriptor.findValueByNumber(v.toInt)
           .getOrElse(enumDescriptor.findValueByNumberCreatingIfUnknown(0))
-      case JString(s) if config.isIgnoringUnknownFields =>
-        enumDescriptor.values.find(_.name == s)
+      case JString(s) if config.isIgnoringUnknownFields => enumDescriptor.values.find(_.name == s)
           .getOrElse(NullValue.NULL_VALUE.scalaValueDescriptor)
-      case JString(s) =>
-        enumDescriptor.values.find(_.name == s)
+      case JString(s) => enumDescriptor.values.find(_.name == s)
           .getOrElse(throw new JsonFormatException(s"Unrecognized enum value '${s}'"))
-      case _ => {
+      case _ =>
           throw new JsonFormatException(s"Unexpected value ($value) for enum ${enumDescriptor.fullName}")
-      }
     }
-  }
 
   protected def parseSingleValue(containerCompanion: GeneratedMessageCompanion[_], fd: FieldDescriptor, value: JValue): PValue = fd.scalaType match {
     case ScalaType.Enum(ed) =>
