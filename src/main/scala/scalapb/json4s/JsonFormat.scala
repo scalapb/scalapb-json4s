@@ -386,7 +386,7 @@ class Parser private (config: Parser.ParserConfig) {
 
   def defaultEnumParser(enumDescriptor: EnumDescriptor, value: JValue): EnumValueDescriptor = value match {
       case JInt(v) => enumDescriptor.findValueByNumber(v.toInt)
-          .getOrElse(enumDescriptor.findValueByNumberCreatingIfUnknown(0))
+          .getOrElse(enumDescriptor.findValueByNumberCreatingIfUnknown(v.toInt))
       case JString(s) if config.isIgnoringUnknownFields => enumDescriptor.values.find(_.name == s)
           .getOrElse(NullValue.NULL_VALUE.scalaValueDescriptor)
       case JString(s) => enumDescriptor.values.find(_.name == s)
