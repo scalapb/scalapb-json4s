@@ -27,9 +27,13 @@ case class JsonFormatException(msg: String, cause: Exception) extends Exception(
 case class Formatter[T](
   writer: (Printer, T) => JValue, parser: (Parser, JValue) => T)
 
+case class EnumFormatter[T](
+  writer: (Printer, T) => JValue, parser: (Parser, JValue) => Option[T])
+
+
 case class FormatRegistry(
   messageFormatters: Map[Class[_], Formatter[_]] = Map.empty,
-  enumFormatters: Map[EnumDescriptor, Formatter[EnumValueDescriptor]] = Map.empty,
+  enumFormatters: Map[EnumDescriptor, EnumFormatter[EnumValueDescriptor]] = Map.empty,
   registeredCompanions: Seq[GenericCompanion] = Seq.empty) {
 
   def registerMessageFormatter[T <: GeneratedMessage](
@@ -40,8 +44,8 @@ case class FormatRegistry(
 
   def registerEnumFormatter[E <: GeneratedEnum](
     writer: (Printer, EnumValueDescriptor) => JValue,
-    parser: (Parser, JValue) => EnumValueDescriptor)(implicit cmp: GeneratedEnumCompanion[E]): FormatRegistry = {
-    copy(enumFormatters = enumFormatters + (cmp.scalaDescriptor -> Formatter(writer, parser)))
+    parser: (Parser, JValue) => Option[EnumValueDescriptor])(implicit cmp: GeneratedEnumCompanion[E]): FormatRegistry = {
+    copy(enumFormatters = enumFormatters + (cmp.scalaDescriptor -> EnumFormatter(writer, parser)))
   }
 
   def registerWriter[T <: GeneratedMessage : ClassTag](writer: T => JValue, parser: JValue => T): FormatRegistry = {
@@ -60,7 +64,7 @@ case class FormatRegistry(
     enumFormatters.get(descriptor).map(_.writer)
   }
 
-  def getEnumParser(descriptor: EnumDescriptor): Option[(Parser, JValue) => EnumValueDescriptor] = {
+  def getEnumParser(descriptor: EnumDescriptor): Option[(Parser, JValue) => Option[EnumValueDescriptor]] = {
     enumFormatters.get(descriptor).map(_.parser)
   }
 }
@@ -384,23 +388,26 @@ class Parser private (config: Parser.ParserConfig) {
     }
   }
 
-  def defaultEnumParser(enumDescriptor: EnumDescriptor, value: JValue): EnumValueDescriptor = value match {
+  def defaultEnumParser(enumDescriptor: EnumDescriptor, value: JValue): Option[EnumValueDescriptor] = value match {
       case JInt(v) => enumDescriptor.findValueByNumber(v.toInt)
-          .getOrElse(enumDescriptor.findValueByNumberCreatingIfUnknown(v.toInt))
+          .orElse(Some(enumDescriptor.findValueByNumberCreatingIfUnknown(v.toInt)))
       case JString(s) if config.isIgnoringUnknownFields => enumDescriptor.values.find(_.name == s)
-          .getOrElse(NullValue.NULL_VALUE.scalaValueDescriptor)
+          .orElse(Some(NullValue.NULL_VALUE.scalaValueDescriptor))
       case JString(s) => enumDescriptor.values.find(_.name == s)
-          .getOrElse(throw new JsonFormatException(s"Unrecognized enum value '${s}'"))
+          .orElse(throw new JsonFormatException(s"Unrecognized enum value '${s}'"))
       case _ =>
           throw new JsonFormatException(s"Unexpected value ($value) for enum ${enumDescriptor.fullName}")
     }
 
   protected def parseSingleValue(containerCompanion: GeneratedMessageCompanion[_], fd: FieldDescriptor, value: JValue): PValue = fd.scalaType match {
-    case ScalaType.Enum(ed) =>
-      PEnum(config.formatRegistry.getEnumParser(ed) match {
+    case ScalaType.Enum(ed) => {
+      val res: Option[EnumValueDescriptor] = config.formatRegistry.getEnumParser(ed) match {
         case Some(parser) => parser(this, value)
         case None => defaultEnumParser(ed, value)
-      })
+      }
+
+      res.map(v => PEnum(v)).getOrElse(PEmpty)
+    }
     case ScalaType.Message(md) =>
       fromJsonToPMessage(containerCompanion.messageCompanionForFieldNumber(fd.number), value, false)
     case st => JsonFormat.parsePrimitive(fd.protoType, value,
@@ -437,7 +444,7 @@ object JsonFormat {
     .registerMessageFormatter[wrappers.BytesValue](primitiveWrapperWriter, primitiveWrapperParser[wrappers.BytesValue])
     .registerMessageFormatter[wrappers.StringValue](primitiveWrapperWriter, primitiveWrapperParser[wrappers.StringValue])
     .registerEnumFormatter[NullValue]((_, _) => JNull, (parser, value) => value match {
-      case JNull => NullValue.NULL_VALUE.scalaValueDescriptor
+      case JNull => Some(NullValue.NULL_VALUE.scalaValueDescriptor)
       case _ => parser.defaultEnumParser(NullValue.scalaDescriptor, value)
     })
     .registerWriter[com.google.protobuf.struct.Value](StructFormat.structValueWriter, StructFormat.structValueParser)
