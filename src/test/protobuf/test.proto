@@ -182,3 +182,7 @@ message TestAllTypes {
   }
 }
 
+message EnumTest {
+  optional MyEnum enum = 1;
+}
+

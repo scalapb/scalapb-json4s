@@ -1,5 +1,6 @@
 package scalapb.json4s
 
+import com.google.protobuf.util.JsonFormat
 import com.google.protobuf.util.JsonFormat.{TypeRegistry => JavaTypeRegistry}
 import org.scalatest.MustMatchers
 import scalapb.json4s.JsonFormat.GenericCompanion
@@ -33,8 +34,11 @@ trait JavaAssertions {
     }
   }
 
-  def javaParse[T <: com.google.protobuf.GeneratedMessageV3.Builder[T]](json: String, b: com.google.protobuf.GeneratedMessageV3.Builder[T]) = {
-    JavaJsonParser.merge(json, b)
+  def javaParse[T <: com.google.protobuf.GeneratedMessageV3.Builder[T]](
+      json: String,
+      b: com.google.protobuf.GeneratedMessageV3.Builder[T],
+      parser: com.google.protobuf.util.JsonFormat.Parser = JavaJsonParser) = {
+    parser.merge(json, b)
     b.build()
   }
 
