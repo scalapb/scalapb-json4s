@@ -30,7 +30,6 @@ case class Formatter[T](
 case class EnumFormatter[T](
   writer: (Printer, T) => JValue, parser: (Parser, JValue) => Option[T])
 
-
 case class FormatRegistry(
   messageFormatters: Map[Class[_], Formatter[_]] = Map.empty,
   enumFormatters: Map[EnumDescriptor, EnumFormatter[EnumValueDescriptor]] = Map.empty,
@@ -392,7 +391,6 @@ class Parser private (config: Parser.ParserConfig) {
       case JInt(v) => enumDescriptor.findValueByNumber(v.toInt)
           .orElse(Some(enumDescriptor.findValueByNumberCreatingIfUnknown(v.toInt)))
       case JString(s) if config.isIgnoringUnknownFields => enumDescriptor.values.find(_.name == s)
-          .orElse(Some(NullValue.NULL_VALUE.scalaValueDescriptor))
       case JString(s) => enumDescriptor.values.find(_.name == s)
           .orElse(throw new JsonFormatException(s"Unrecognized enum value '${s}'"))
       case _ =>

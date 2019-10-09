@@ -361,7 +361,7 @@ class JsonFormatSpec extends FlatSpec with MustMatchers with OptionValues with J
 
   "TestProto" should "not fail for unknown enum values when `ignoringUnknownFields` is set" in {
       new Parser().ignoringUnknownFields
-        .fromJsonString[MyTest]("""{"opt_enum":"ZAZA"}""")  must be(MyTest(optEnum = Some(MyEnum.UNKNOWN)))
+        .fromJsonString[MyTest]("""{"opt_enum":"ZAZA"}""")  must be(MyTest(optEnum = None))
   }
 
   "PreservedTestJson" should "be TestProto when parsed from json" in {
