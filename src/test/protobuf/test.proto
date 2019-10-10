@@ -42,8 +42,6 @@ message MyTest {
   }
 
   map<fixed64, bytes> fixed64_to_bytes = 18;
-  optional MyEnumWithoutDefault enum_no_default = 19;
-
 }
 
 message IntFields {
@@ -184,5 +182,7 @@ message TestAllTypes {
 
 message EnumTest {
   optional MyEnum enum = 1;
+  optional MyEnumWithoutDefault enum_no_default = 2;
+
 }
 

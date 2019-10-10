@@ -404,7 +404,7 @@ class Parser private (config: Parser.ParserConfig) {
         case None => defaultEnumParser(ed, value)
       }
 
-      res.map(v => PEnum(v)).getOrElse(PEmpty)
+      res.fold[PValue](PEmpty)(PEnum)
     }
     case ScalaType.Message(md) =>
       fromJsonToPMessage(containerCompanion.messageCompanionForFieldNumber(fd.number), value, false)
