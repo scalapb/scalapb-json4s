@@ -9,15 +9,15 @@ import scalapb.GeneratedMessageCompanion
 
 class EnumFormatSpec extends FlatSpec with MustMatchers with JavaAssertions {
 
-  "EnumTest" should "be none for non-existent int value - proto2" in {
+  "MyEnum" should "be none for non-existent int value - proto2" in {
     new Parser().fromJsonString[EnumTest]("""{"enum":10}""") must be(EnumTest(enum = None))
   }
 
-  "EnumTest" should "return `Unrecognized` for non-existent int value - proto3" in {
+  "MyEnum" should "be set to `Unrecognized` for non-existent int value - proto3" in {
     new Parser().fromJsonString[EnumTest3]("""{"enum":10}""") must be(EnumTest3(enum =  MyEnum3.Unrecognized(10)))
   }
 
-  "TestProto" should "fail for unknown string enum value - proto2/proto3" in {
+  "EnumTest" should "fail for unknown string enum value - proto2/proto3" in {
     assertThrows[JsonFormatException](
       new Parser().fromJsonString[EnumTest]("""{"enum":"ZAZA"}""")
     )
@@ -26,7 +26,7 @@ class EnumFormatSpec extends FlatSpec with MustMatchers with JavaAssertions {
     )
   }
 
-  "TestProto" should "not fail for unknown enum values when `ignoringUnknownFields` is set - proto3/proto3" in {
+  "EnumTest" should "not fail for unknown enum values when `ignoringUnknownFields` is set - proto2/proto3" in {
     new Parser().ignoringUnknownFields
       .fromJsonString[EnumTest]("""{"enum":"ZAZA"}""")  must be(EnumTest(enum = None))
     new Parser().ignoringUnknownFields
@@ -38,7 +38,7 @@ class EnumFormatSpec extends FlatSpec with MustMatchers with JavaAssertions {
     assertJsonIsSameAsJava(jsontest.test.EnumTest(Some(MyEnum.V1)))
   }
 
-  "Enum" should "be parsed the same way as java - non-existent string value" in {
+  "EnumTest" should "be parsed the same way as java - non-existent string value - proto2/proto3" in {
     assertParse[jsontest.test.EnumTest, jsontest.Test.EnumTest](
       """{"enum": "XOXO"}""",
       jsontest.Test.EnumTest.newBuilder,
@@ -50,7 +50,7 @@ class EnumFormatSpec extends FlatSpec with MustMatchers with JavaAssertions {
       javaProto => EnumTest3.fromJavaProto(javaProto))
   }
 
-  "Enum" should "be parsed the same way as java - non-existent int value" in {
+  "EnumTest" should "be parsed the same way as java - non-existent int value - proto2/proto3" in {
     assertParse[jsontest.test.EnumTest, jsontest.Test.EnumTest](
       """{"enum": 10}""",
       jsontest.Test.EnumTest.newBuilder,
