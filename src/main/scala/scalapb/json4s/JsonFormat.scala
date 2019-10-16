@@ -387,17 +387,20 @@ class Parser private (config: Parser.ParserConfig) {
     }
   }
 
-  def defaultEnumParser(enumDescriptor: EnumDescriptor, value: JValue): Option[EnumValueDescriptor] = value match {
-      case JInt(v) if enumDescriptor.file.isProto3 => Some(enumDescriptor.findValueByNumberCreatingIfUnknown(v.toInt))
-      case JInt(v) => enumDescriptor.findValueByNumber(v.toInt)
-      case JString(s) if (config.isIgnoringUnknownFields && enumDescriptor.file.isProto3) =>
-        enumDescriptor.values.find(_.name == s).orElse(enumDescriptor.findValueByNumber(0))
-      case JString(s) if config.isIgnoringUnknownFields => enumDescriptor.values.find(_.name == s)
-      case JString(s) => enumDescriptor.values.find(_.name == s)
+  def defaultEnumParser(enumDescriptor: EnumDescriptor, value: JValue): Option[EnumValueDescriptor] = {
+    (value, enumDescriptor.file.isProto3, config.isIgnoringUnknownFields) match {
+      case (JInt(v), true, _) => Some(enumDescriptor.findValueByNumberCreatingIfUnknown(v.toInt))
+      case (JInt(v), _, true) => enumDescriptor.findValueByNumber(v.toInt)
+      case (JInt(v), _, false) => enumDescriptor.findValueByNumber(v.toInt)
+        .orElse(throw new JsonFormatException(s"Unexpected value ($value) for enum ${enumDescriptor.fullName}"))
+      case (JString(s), true, true) => enumDescriptor.values.find(_.name == s).orElse(enumDescriptor.findValueByNumber(0))
+      case (JString(s), _, true) => enumDescriptor.values.find(_.name == s)
+      case (JString(s), _, _) => enumDescriptor.values.find(_.name == s)
         .orElse(throw new JsonFormatException(s"Unrecognized enum value '${s}'"))
       case _ =>
         throw new JsonFormatException(s"Unexpected value ($value) for enum ${enumDescriptor.fullName}")
     }
+  }
 
   protected def parseSingleValue(containerCompanion: GeneratedMessageCompanion[_], fd: FieldDescriptor, value: JValue): PValue = fd.scalaType match {
     case ScalaType.Enum(ed) => {

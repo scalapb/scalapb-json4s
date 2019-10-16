@@ -1,6 +1,6 @@
 package scalapb.json4s
 
-import com.google.protobuf.Message
+import com.google.protobuf.{InvalidProtocolBufferException, Message}
 import jsontest.test.{EnumTest, MyEnum}
 import jsontest.test3.EnumTest3
 import jsontest.test3.MyTest3.MyEnum3
@@ -9,8 +9,8 @@ import scalapb.GeneratedMessageCompanion
 
 class EnumFormatSpec extends FlatSpec with MustMatchers with JavaAssertions {
 
-  "MyEnum" should "be none for non-existent int value - proto2" in {
-    new Parser().fromJsonString[EnumTest]("""{"enum":10}""") must be(EnumTest(enum = None))
+  "MyEnum" should "be none for non-existent int value when `ignoringUnknownFields` is set - proto2" in {
+    new Parser().ignoringUnknownFields.fromJsonString[EnumTest]("""{"enum":10}""") must be(EnumTest(enum = None))
   }
 
   "MyEnum" should "be set to `Unrecognized` for non-existent int value - proto3" in {
@@ -38,7 +38,7 @@ class EnumFormatSpec extends FlatSpec with MustMatchers with JavaAssertions {
     assertJsonIsSameAsJava(jsontest.test.EnumTest(Some(MyEnum.V1)))
   }
 
-  "EnumTest" should "be parsed the same way as java - non-existent string value - proto2/proto3" in {
+  "EnumTest" should "be parsed the same way as java - non-existent string value when ignoringUnknownFields is set - proto2/proto3" in {
     assertParse[jsontest.test.EnumTest, jsontest.Test.EnumTest](
       """{"enum": "XOXO"}""",
       jsontest.Test.EnumTest.newBuilder,
@@ -50,7 +50,7 @@ class EnumFormatSpec extends FlatSpec with MustMatchers with JavaAssertions {
       javaProto => EnumTest3.fromJavaProto(javaProto))
   }
 
-  "EnumTest" should "be parsed the same way as java - non-existent int value - proto2/proto3" in {
+  "EnumTest" should "be parsed the same way as java - non-existent int value when ignoringUnknownFields is set - proto2/proto3" in {
     assertParse[jsontest.test.EnumTest, jsontest.Test.EnumTest](
       """{"enum": 10}""",
       jsontest.Test.EnumTest.newBuilder,
@@ -60,6 +60,34 @@ class EnumFormatSpec extends FlatSpec with MustMatchers with JavaAssertions {
       """{"enum": 10}""",
       jsontest.Test3.EnumTest3.newBuilder,
       javaProto => EnumTest3.fromJavaProto(javaProto))
+  }
+
+    "EnumTest" should "be parsed the same way as java - non-existent int value when ignoringUnknownFields is NOT set - proto3" in {
+      val json = """{"enum": 10}"""
+      val parser = JavaJsonParser
+      val builder = jsontest.Test3.EnumTest3.newBuilder
+      parser.merge(json, builder)
+
+      val scala = new Parser().fromJsonString[EnumTest3](json)
+      EnumTest3.fromJavaProto(builder.build()) must be(scala)
+    }
+
+  "EnumTest" should "fail in java/scala in same way when ignoringUnknownFields is not set - proto2/proto3" in {
+    val jsonWithIntEnum = """{"enum": 10}"""
+    an[InvalidProtocolBufferException] must be thrownBy javaParse(jsonWithIntEnum, jsontest.Test.EnumTest.newBuilder)
+    an[JsonFormatException] must be thrownBy new Parser().fromJsonString[jsontest.test.EnumTest](jsonWithIntEnum)
+
+    val jsonWithStrEnum = """{"enum": "XOXO"}"""
+    an[InvalidProtocolBufferException] must be thrownBy javaParse(jsonWithStrEnum, jsontest.Test.EnumTest.newBuilder)
+    an[JsonFormatException] must be thrownBy new Parser().fromJsonString[jsontest.test.EnumTest](jsonWithStrEnum)
+    an[InvalidProtocolBufferException] must be thrownBy javaParse(jsonWithStrEnum, jsontest.Test3.EnumTest3.newBuilder)
+    an[JsonFormatException] must be thrownBy new Parser().fromJsonString[EnumTest3](jsonWithStrEnum)
+  }
+
+  "EnumTest" should "parse non-existent int enum in same way when ignoringUnknownFields is not set - proto3" in {
+    val jsonWithIntEnum = """{"enum": 10}"""
+        javaParse(jsonWithIntEnum, jsontest.Test3.EnumTest3.newBuilder)
+        new Parser().fromJsonString[EnumTest3](jsonWithIntEnum)
   }
 
   def assertParse[T <: scalapb.GeneratedMessage with scalapb.Message[T], J](
@@ -74,5 +102,4 @@ class EnumFormatSpec extends FlatSpec with MustMatchers with JavaAssertions {
 
     fromJavaProto(builder.build().asInstanceOf[J]) must be(scala)
   }
-
 }
