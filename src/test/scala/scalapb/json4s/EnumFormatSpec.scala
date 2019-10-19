@@ -22,6 +22,10 @@ class EnumFormatSpec extends FlatSpec with MustMatchers with JavaAssertions {
     assertParse("""{"enum":"V1"}""", EnumTest3(MyEnum3.V1))
     assertParse("""{"enum":"0"}""", EnumTest(Some(MyEnum.UNKNOWN)))
     assertParse("""{"enum":"0"}""", EnumTest3())
+    assertParse("""{"enum":"1.0"}""", EnumTest(Some(MyEnum.V1)))
+    assertParse("""{"enum":"1.0"}""", EnumTest3(MyEnum3.V1))
+    assertFails("""{"enum":"1.4"}""", EnumTest)
+    assertFails("""{"enum":"1.4"}""", EnumTest3)
     assertFails("""{"enum":"10"}""", EnumTest)
     assertParse("""{"enum":"10"}""", EnumTest3(MyEnum3.Unrecognized(10)))
   }
@@ -52,6 +56,10 @@ class EnumFormatSpec extends FlatSpec with MustMatchers with JavaAssertions {
     assertParse("""{"enum":"V1"}""", EnumTest3(MyEnum3.V1))
     assertParse("""{"enum":"0"}""", EnumTest(Some(MyEnum.UNKNOWN)))
     assertParse("""{"enum":"0"}""", EnumTest3())
+    assertParse("""{"enum":"1.0"}""", EnumTest(Some(MyEnum.V1)))
+    assertParse("""{"enum":"1.0"}""", EnumTest3(MyEnum3.V1))
+    assertParse("""{"enum":"1.4"}""", EnumTest())
+    assertParse("""{"enum":"1.4"}""", EnumTest3())
     assertParse("""{"enum":"10"}""", EnumTest())
     assertParse("""{"enum":"10"}""", EnumTest3(MyEnum3.Unrecognized(10)))
   }

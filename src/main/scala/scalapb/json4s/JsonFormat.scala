@@ -582,9 +582,10 @@ class Parser private (config: Parser.ParserConfig) {
           .find(_.name == s)
           .orElse {
             try {
-              enumValueFromInt(s.toInt)
+              enumValueFromInt(new java.math.BigDecimal(s).intValueExact)
             } catch {
-              case e: NumberFormatException => None
+              case _: ArithmeticException => None
+              case _: NumberFormatException => None
             }
           }
           .orElse(defaultValue)
