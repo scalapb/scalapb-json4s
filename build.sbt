@@ -12,7 +12,7 @@ name := "scalapb-json4s"
 scalacOptions in ThisBuild ++= {
   CrossVersion.partialVersion(scalaVersion.value) match {
     case Some((2, v)) if v <= 11 => List("-target:jvm-1.7")
-    case _ => Nil
+    case _                       => Nil
   }
 }
 
@@ -34,7 +34,7 @@ releaseProcess := Seq[ReleaseStep](
   releaseStepCommand(s"sonatypeBundleRelease"),
   setNextVersion,
   commitNextVersion,
-  pushChanges,
+  pushChanges
 )
 
 libraryDependencies ++= Seq(
@@ -44,17 +44,17 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "3.0.8" % "test",
   "org.scalacheck" %% "scalacheck" % "1.14.2" % "test",
   "com.google.protobuf" % "protobuf-java-util" % "3.8.0" % "test",
-  "com.google.protobuf" % "protobuf-java" % "3.8.0" % "protobuf",
+  "com.google.protobuf" % "protobuf-java" % "3.8.0" % "protobuf"
 )
 
-lazy val Proto26Test = config("proto26") extend(Test)
+lazy val Proto26Test = config("proto26") extend (Test)
 
 lazy val root = (project in file("."))
   .configs(Proto26Test)
   .settings(
     inConfig(Proto26Test)(
       Defaults.testSettings ++
-      sbtprotoc.ProtocPlugin.protobufConfigSettings
+        sbtprotoc.ProtocPlugin.protobufConfigSettings
     ),
     inConfig(Test)(sbtprotoc.ProtocPlugin.protobufConfigSettings)
   )
@@ -63,17 +63,21 @@ PB.protocVersion := "-v371"
 
 PB.protocVersion in Proto26Test := "-v261"
 
-PB.protoSources in Proto26Test := Seq((sourceDirectory in Proto26Test).value / "protobuf")
+PB.protoSources in Proto26Test := Seq(
+  (sourceDirectory in Proto26Test).value / "protobuf"
+)
 
 PB.targets in Compile := Nil
 
 PB.targets in Test := Seq(
   PB.gens.java -> (sourceManaged in Test).value,
-  scalapb.gen(javaConversions=true) -> (sourceManaged in Test).value
+  scalapb.gen(javaConversions = true) -> (sourceManaged in Test).value
 )
 
 PB.targets in Proto26Test := Seq(
   scalapb.gen() -> (sourceManaged in Proto26Test).value
 )
 
-mimaPreviousArtifacts := Set("com.thesamet.scalapb" %% "scalapb-json4s" % "0.9.0-M1")
+mimaPreviousArtifacts := Set(
+  "com.thesamet.scalapb" %% "scalapb-json4s" % "0.9.0-M1"
+)

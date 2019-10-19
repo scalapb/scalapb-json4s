@@ -13,8 +13,12 @@ object Durations {
     val secondsInRange = (duration.seconds >= DURATION_SECONDS_MIN &&
       duration.seconds <= DURATION_SECONDS_MAX)
     val nanosInRange = duration.nanos >= -999999999L && duration.nanos <= Timestamps.NANOS_PER_SECOND
-    val sameSign = !((duration.seconds < 0 || duration.nanos < 0) && (duration.seconds > 0 || duration.nanos > 0))
-    require(secondsInRange && nanosInRange && sameSign, "Duration is not valid.")
+    val sameSign =
+      !((duration.seconds < 0 || duration.nanos < 0) && (duration.seconds > 0 || duration.nanos > 0))
+    require(
+      secondsInRange && nanosInRange && sameSign,
+      "Duration is not valid."
+    )
   }
 
   def writeDuration(duration: com.google.protobuf.duration.Duration): String = {
@@ -57,8 +61,10 @@ object Durations {
       (number, "")
     }
     val seconds = secondsStr.toLong
-    val nanos = if (nanosStr.isEmpty) 0 else
-      parseNanos(nanosStr)
+    val nanos =
+      if (nanosStr.isEmpty) 0
+      else
+        parseNanos(nanosStr)
 
     if (seconds < 0) {
       throw new ParseException("Invalid duration string: " + value, 0)
@@ -68,6 +74,7 @@ object Durations {
 
     com.google.protobuf.duration.Duration(
       seconds = if (negative) -seconds else seconds,
-      nanos = if (negative) -nanos else nanos)
+      nanos = if (negative) -nanos else nanos
+    )
   }
 }
