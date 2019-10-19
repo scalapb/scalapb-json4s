@@ -79,5 +79,5 @@ PB.targets in Proto26Test := Seq(
 )
 
 mimaPreviousArtifacts := Set(
-  "com.thesamet.scalapb" %% "scalapb-json4s" % "0.9.0-M1"
+  "com.thesamet.scalapb" %% "scalapb-json4s" % "0.10.0"
 )
