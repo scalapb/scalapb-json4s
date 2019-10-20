@@ -16,15 +16,16 @@ object Timestamps {
   val NANOS_PER_MILLISECOND = 1000000
   val NANOS_PER_MICROSECOND = 1000
 
-  private val timestampFormat: ThreadLocal[SimpleDateFormat] = new ThreadLocal[SimpleDateFormat] {
-    override def initialValue(): SimpleDateFormat = {
-      val sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss")
-      val calendar = new GregorianCalendar(TimeZone.getTimeZone("UTC"))
-      calendar.setGregorianChange(new Date(Long.MinValue))
-      sdf.setCalendar(calendar)
-      sdf
+  private val timestampFormat: ThreadLocal[SimpleDateFormat] =
+    new ThreadLocal[SimpleDateFormat] {
+      override def initialValue(): SimpleDateFormat = {
+        val sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss")
+        val calendar = new GregorianCalendar(TimeZone.getTimeZone("UTC"))
+        calendar.setGregorianChange(new Date(Long.MinValue))
+        sdf.setCalendar(calendar)
+        sdf
+      }
     }
-  }
 
   def isValid(ts: Timestamp): Boolean =
     (ts.seconds >= TIMESTAMP_SECONDS_MIN &&
@@ -65,14 +66,18 @@ object Timestamps {
   def parseTimezoneOffset(s: String): Long = s(0) match {
     case 'Z' =>
       if (s.length != 1) {
-        throw new ParseException(s"Failed to parse timestamp: invalid trailing data: '$s'")
+        throw new ParseException(
+          s"Failed to parse timestamp: invalid trailing data: '$s'"
+        )
       } else {
         0
       }
     case '+' | '-' =>
       val pos = s.indexOf(':')
       if (pos == -1) {
-        throw new ParseException(s"Failed to parse timestamp: invalid offset value: '$s'")
+        throw new ParseException(
+          s"Failed to parse timestamp: invalid offset value: '$s'"
+        )
       } else {
         val hours = s.substring(1, pos)
         val minutes = s.substring(pos + 1)
@@ -89,36 +94,51 @@ object Timestamps {
     }
     val timezoneOffsetPosition = {
       val zIndex = value.indexOf('Z', dayOffset)
-      if (zIndex != -1) zIndex else {
+      if (zIndex != -1) zIndex
+      else {
         val pIndex = value.indexOf('+', dayOffset)
-        if (pIndex != -1) pIndex else {
+        if (pIndex != -1) pIndex
+        else {
           val mIndex = value.indexOf('-', dayOffset)
-          if (mIndex != -1) mIndex else {
-            throw new ParseException("Failed to parse timestamp: missing valid timezone offset.")
+          if (mIndex != -1) mIndex
+          else {
+            throw new ParseException(
+              "Failed to parse timestamp: missing valid timezone offset."
+            )
           }
         }
       }
     }
-    val timezoneOffset = parseTimezoneOffset(value.substring(timezoneOffsetPosition))
+    val timezoneOffset = parseTimezoneOffset(
+      value.substring(timezoneOffsetPosition)
+    )
 
     val timeValue = value.substring(0, timezoneOffsetPosition)
     val pointPosition = timeValue.indexOf('.')
-    val (secondValue, nanoValue) = if (pointPosition == -1)
-      (timeValue, "") else
-      (timeValue.substring(0, pointPosition), timeValue.substring(pointPosition + 1))
+    val (secondValue, nanoValue) =
+      if (pointPosition == -1)
+        (timeValue, "")
+      else
+        (
+          timeValue.substring(0, pointPosition),
+          timeValue.substring(pointPosition + 1)
+        )
     val date = timestampFormat.get().parse(secondValue)
     val seconds: Long = date.getTime / MILLIS_PER_SECOND - timezoneOffset
-    val nanos: Int = if (nanoValue.isEmpty) 0 else Durations.parseNanos(nanoValue)
+    val nanos: Int =
+      if (nanoValue.isEmpty) 0 else Durations.parseNanos(nanoValue)
     normalizedTimestamp(seconds, nanos)
   }
 
   def normalizedTimestamp(seconds: Long, nanos: Int): Timestamp = {
-    val (ns, nn) = if (nanos <= -NANOS_PER_SECOND || nanos >= NANOS_PER_SECOND) {
-      (seconds + nanos / NANOS_PER_SECOND, nanos % NANOS_PER_SECOND)
-    } else (seconds, nanos)
+    val (ns, nn) =
+      if (nanos <= -NANOS_PER_SECOND || nanos >= NANOS_PER_SECOND) {
+        (seconds + nanos / NANOS_PER_SECOND, nanos % NANOS_PER_SECOND)
+      } else (seconds, nanos)
 
-    val (ns2, nn2) = if (nn < 0) (seconds - 1, nanos + NANOS_PER_SECOND)
-    else (ns, nn)
+    val (ns2, nn2) =
+      if (nn < 0) (seconds - 1, nanos + NANOS_PER_SECOND)
+      else (ns, nn)
 
     checkValid(Timestamp(seconds = ns2, nanos = nn2))
   }

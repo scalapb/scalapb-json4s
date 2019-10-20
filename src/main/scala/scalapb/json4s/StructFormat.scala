@@ -6,35 +6,37 @@ import com.google.protobuf.struct
 
 object StructFormat {
   def structValueWriter(v: struct.Value): JValue = v.kind match {
-    case Kind.Empty => JNull
-    case Kind.NullValue(value) => JNull
+    case Kind.Empty              => JNull
+    case Kind.NullValue(value)   => JNull
     case Kind.NumberValue(value) => JDouble(value)
     case Kind.StringValue(value) => JString(value)
-    case Kind.BoolValue(value) => JBool(value)
+    case Kind.BoolValue(value)   => JBool(value)
     case Kind.StructValue(value) => structWriter(value)
-    case Kind.ListValue(value) => listValueWriter(value)
+    case Kind.ListValue(value)   => listValueWriter(value)
   }
 
   def structValueParser(v: JValue): struct.Value = {
     val kind: struct.Value.Kind = v match {
-      case JNothing => Kind.NullValue(struct.NullValue.NULL_VALUE)
-      case JNull => Kind.NullValue(struct.NullValue.NULL_VALUE)
-      case JString(s) => Kind.StringValue(value = s)
-      case JDouble(num) => Kind.NumberValue(value = num)
+      case JNothing      => Kind.NullValue(struct.NullValue.NULL_VALUE)
+      case JNull         => Kind.NullValue(struct.NullValue.NULL_VALUE)
+      case JString(s)    => Kind.StringValue(value = s)
+      case JDouble(num)  => Kind.NumberValue(value = num)
       case JDecimal(num) => Kind.NumberValue(value = num.toDouble)
-      case JLong(num) => Kind.NumberValue(value = num.toDouble)
-      case JInt(num) => Kind.NumberValue(value = num.toDouble)
-      case JBool(value) => Kind.BoolValue(value = value)
-      case obj: JObject => Kind.StructValue(value = structParser(obj))
-      case arr: JArray => Kind.ListValue(listValueParser(arr))
-      case JSet(set) => throw new RuntimeException("Unsupported")
+      case JLong(num)    => Kind.NumberValue(value = num.toDouble)
+      case JInt(num)     => Kind.NumberValue(value = num.toDouble)
+      case JBool(value)  => Kind.BoolValue(value = value)
+      case obj: JObject  => Kind.StructValue(value = structParser(obj))
+      case arr: JArray   => Kind.ListValue(listValueParser(arr))
+      case JSet(set)     => throw new RuntimeException("Unsupported")
     }
     struct.Value(kind = kind)
   }
 
   def structParser(v: JValue): struct.Struct = v match {
-    case JObject(fields) => struct.Struct(
-      fields = fields.map(kv => (kv._1 -> structValueParser(kv._2))).toMap)
+    case JObject(fields) =>
+      struct.Struct(
+        fields = fields.map(kv => (kv._1 -> structValueParser(kv._2))).toMap
+      )
     case _ => throw new JsonFormatException("Expected an object")
   }
 

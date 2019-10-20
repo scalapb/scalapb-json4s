@@ -47,3 +47,7 @@ message StructTest {
   google.protobuf.NullValue nv = 1;
   repeated google.protobuf.NullValue rep_nv = 2;
 }
+
+message EnumTest3 {
+  MyTest3.MyEnum3 enum = 1;
+}
