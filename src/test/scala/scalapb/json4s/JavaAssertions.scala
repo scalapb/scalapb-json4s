@@ -22,7 +22,7 @@ class DefaultParserContext {
     ParserContext(new Parser(), JavaJsonFormat.parser())
 }
 
-class IgnoringUnkownParserContext {
+class IgnoringUnknownParserContext {
   implicit val pc: ParserContext = ParserContext(
     new Parser().ignoringUnknownFields,
     JavaJsonFormat.parser.ignoringUnknownFields()
