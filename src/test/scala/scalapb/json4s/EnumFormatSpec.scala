@@ -47,7 +47,7 @@ class EnumFormatSpec extends FlatSpec with MustMatchers with JavaAssertions {
     assertParse("""{"enum":-1}""", EnumTest3(MyEnum3.Unrecognized(-1)))
   }
 
-  "ignoring unknown fields parser" should "match Java behavior for strings enums" in new IgnoringUnkownParserContext {
+  "ignoring unknown fields parser" should "match Java behavior for strings enums" in new IgnoringUnknownParserContext {
     assertParse("""{"enum":"ZAZA"}""", EnumTest())
     assertParse("""{"enum":"ZAZA"}""", EnumTest3())
     assertParse("""{"enum":""}""", EnumTest())
@@ -64,7 +64,7 @@ class EnumFormatSpec extends FlatSpec with MustMatchers with JavaAssertions {
     assertParse("""{"enum":"10"}""", EnumTest3(MyEnum3.Unrecognized(10)))
   }
 
-  "ignoring unknown fields parser" should "match Java behavior for int enums" in new IgnoringUnkownParserContext {
+  "ignoring unknown fields parser" should "match Java behavior for int enums" in new IgnoringUnknownParserContext {
     assertParse("""{"enum":10}""", EnumTest())
     assertParse("""{"enum":10}""", EnumTest3(MyEnum3.Unrecognized(10)))
     assertParse("""{"enum":0}""", EnumTest(Some(MyEnum.UNKNOWN)))

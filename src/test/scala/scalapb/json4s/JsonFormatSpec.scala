@@ -629,7 +629,7 @@ class JsonFormatSpec
     assertFails("""{"@type": "foo"}""", MyTest)
   }
 
-  "unknown fields" should "not get rejected when ignoreUnknownFields is set" in new IgnoringUnkownParserContext {
+  "unknown fields" should "not get rejected when ignoreUnknownFields is set" in new IgnoringUnknownParserContext {
     assertParse("""{"random_field_123": 3}""", MyTest())
     // There is special for @type field for anys, lets make sure they get rejected too
     assertParse("""{"@type": "foo"}""", MyTest())
