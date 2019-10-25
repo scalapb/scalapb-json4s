@@ -12,6 +12,7 @@ import org.json4s.JsonAST._
 import org.json4s.{Reader, Writer}
 
 import scala.collection.mutable
+import scala.collection.concurrent.TrieMap
 import scala.language.existentials
 import scala.reflect.ClassTag
 import _root_.scalapb.descriptors._
@@ -1002,22 +1003,21 @@ object JsonFormat {
 
   /** Given a message descriptor, provides a map from field names to field descriptors. */
   private[json4s] object MemorizedFieldNameMap {
-    // The cached map. For thread-safety, we keep a changing references to an immutable map.
-    private var fieldNameMap: Map[Descriptor, Map[String, FieldDescriptor]] =
-      Map.empty
+    private[this] val fieldNameMap
+        : TrieMap[Descriptor, Map[String, FieldDescriptor]] =
+      TrieMap.empty
 
     def apply(descriptor: Descriptor): Map[String, FieldDescriptor] = {
-      if (fieldNameMap.contains(descriptor)) fieldNameMap(descriptor)
-      else {
-        val mapBuilder = Map.newBuilder[String, FieldDescriptor]
-        descriptor.fields.foreach { fd =>
-          mapBuilder += fd.name -> fd
-          mapBuilder += JsonFormat.jsonName(fd) -> fd
+      fieldNameMap.getOrElseUpdate(
+        descriptor, {
+          val mapBuilder = Map.newBuilder[String, FieldDescriptor]
+          descriptor.fields.foreach { fd =>
+            mapBuilder += fd.name -> fd
+            mapBuilder += JsonFormat.jsonName(fd) -> fd
+          }
+          mapBuilder.result()
         }
-        val result = mapBuilder.result()
-        fieldNameMap = fieldNameMap + (descriptor -> result)
-        result
-      }
+      )
     }
   }
 
