@@ -29,10 +29,10 @@ class OneOfSpec
   )
 
   forEvery(examples) { (message: OneOf, json: String) =>
-    new Printer().includingDefaultValueFields.toJson(message) must be(
+    new Printer().toJson(message) must be(
       parse(json)
     )
-    new Printer().includingDefaultValueFields.toJson(message) must be(
+    new Printer().toJson(message) must be(
       parse(
         ProtobufJavaPrinter().print(toJavaProto(message))
       )
@@ -53,7 +53,7 @@ class OneOfSpec
   "dictionary test" should "preserve zero values in one of" in {
     val message = Dictionary(Seq(Pair("myKey", Uint32Value(0))))
 
-    new Printer().includingDefaultValueFields.toJson(message) must be(
+    new Printer().toJson(message) must be(
       parse("""{"pairs":[{"key": "myKey", "uint32Value": 0}]}""")
     )
 
