@@ -585,7 +585,7 @@ class Parser private (config: Parser.ParserConfig) {
             try {
               enumValueFromInt(new java.math.BigDecimal(s).intValueExact)
             } catch {
-              case _: ArithmeticException => None
+              case _: ArithmeticException   => None
               case _: NumberFormatException => None
             }
           }
