@@ -6,11 +6,12 @@ import org.json4s.JsonAST.{JBool, JDecimal, JDouble, JString}
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
 import org.json4s.{JInt, JValue}
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.must.Matchers
 
 class PrimitiveWrappersSpec
-    extends FlatSpec
-    with MustMatchers
+    extends AnyFlatSpec
+    with Matchers
     with JavaAssertions {
   "Empty object" should "give empty json for Wrapper" in {
     JsonFormat.toJson(Wrapper()) must be(render(Map.empty[String, JValue]))

@@ -1,7 +1,7 @@
 package scalapb.json4s
 
 import com.google.protobuf.util.JsonFormat.{TypeRegistry => JavaTypeRegistry}
-import org.scalatest.{FlatSpec, MustMatchers, Assertion}
+import org.scalatest.Assertion
 import scalapb.json4s.JsonFormat.GenericCompanion
 import com.google.protobuf.{GeneratedMessageV3, InvalidProtocolBufferException}
 import scalapb.{
@@ -14,6 +14,8 @@ import com.google.protobuf.util.JsonFormat.{Parser => JavaJsonParser}
 import com.google.protobuf.util.{JsonFormat => JavaJsonFormat}
 
 import scala.language.existentials
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.must.Matchers
 
 case class ParserContext(scalaParser: Parser, javaParser: JavaJsonParser)
 
@@ -30,7 +32,7 @@ class IgnoringUnknownParserContext {
 }
 
 trait JavaAssertions {
-  self: FlatSpec with MustMatchers =>
+  self: AnyFlatSpec with Matchers =>
 
   def registeredCompanions: Seq[GeneratedMessageCompanion[_]] = Seq.empty
 

@@ -6,11 +6,12 @@ import jsontest.oneof.Pair.ValueByType._
 import jsontest.oneof.{Dictionary, OneOf, OneOfMessage, Pair}
 import org.json4s.jackson.JsonMethods.parse
 import org.scalatest.prop._
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.must.Matchers
 
 class OneOfSpec
-    extends FlatSpec
-    with MustMatchers
+    extends AnyFlatSpec
+    with Matchers
     with TableDrivenPropertyChecks {
 
   val examples = Table(
