@@ -9,7 +9,7 @@ libraryDependencies += "com.thesamet.scalapb" %% "compilerplugin" % "0.10.0-M1"
 
 addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.6.1")
 
-addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.2.1")
+addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.3.0")
 
 // For https://github.com/lightbend/mima/issues/422
 resolvers += Resolver.url(
