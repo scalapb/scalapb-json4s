@@ -9,7 +9,6 @@ import org.json4s.jackson.JsonMethods._
 import org.scalatest.{FlatSpec, MustMatchers}
 
 class WellKnownTypesSpec extends FlatSpec with MustMatchers {
-
   val durationProto = WellKnownTest(duration = Some(Duration(146, 3455)))
 
   "Duration serializer" should "work" in {

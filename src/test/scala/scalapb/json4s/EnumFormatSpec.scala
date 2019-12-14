@@ -10,7 +10,6 @@ import scalapb.JavaProtoSupport
 import com.google.protobuf.util.JsonFormat.{Parser => JavaParser}
 
 class EnumFormatSpec extends FlatSpec with MustMatchers with JavaAssertions {
-
   // not ignoring unknown fields:
 
   "default parser" should "match Java behavior for string enums" in new DefaultParserContext {

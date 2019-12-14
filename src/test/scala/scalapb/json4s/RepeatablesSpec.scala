@@ -9,7 +9,6 @@ class JsonSpec
     extends FlatSpec
     with ScalaCheckDrivenPropertyChecks
     with MustMatchers {
-
   val nestedGen =
     Arbitrary.arbitrary[Option[Int]].map(s => Nested(nestedField = s))
 

@@ -12,7 +12,6 @@ class OneOfSpec
     extends FlatSpec
     with MustMatchers
     with TableDrivenPropertyChecks {
-
   val examples = Table(
     ("message", "json"),
     (OneOf.defaultInstance, "{}"),

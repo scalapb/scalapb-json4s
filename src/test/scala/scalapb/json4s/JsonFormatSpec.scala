@@ -19,7 +19,6 @@ class JsonFormatSpec
     with MustMatchers
     with OptionValues
     with JavaAssertions {
-
   val TestProto = MyTest().update(
     _.hello := "Foo",
     _.foobar := 37,
@@ -383,7 +382,6 @@ class JsonFormatSpec
     )
     validateRejects(s"""{"fixlong":"${uint64max + 1}"}""")
     validateRejects("""{"fixlong":"-1"}""")
-
   }
 
   "TestProto" should "produce valid JSON output for unsigned integers" in {

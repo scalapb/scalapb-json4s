@@ -21,5 +21,4 @@ class TypeRegistrySpec extends FlatSpec with MustMatchers with OptionValues {
     reg.findType("type.googleapis.com/jsontest.MyTest3").value must be(MyTest3)
     reg.findType("type.googleapis.com/jsontest.Wrapper") must be(None)
   }
-
 }

@@ -42,7 +42,6 @@ case class FormatRegistry(
       Map.empty,
     registeredCompanions: Seq[GenericCompanion] = Seq.empty
 ) {
-
   def registerMessageFormatter[T <: GeneratedMessage](
       writer: (Printer, T) => JValue,
       parser: (Parser, JValue) => T
@@ -468,7 +467,6 @@ class Parser private (config: Parser.ParserConfig) {
       value: JValue,
       skipTypeUrl: Boolean
   ): PMessage = {
-
     def parseValue(fd: FieldDescriptor, value: JValue): PValue = {
       if (fd.isMapField) {
         value match {

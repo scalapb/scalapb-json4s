@@ -107,5 +107,4 @@ trait JavaAssertions {
       parserContext.scalaParser.fromJsonString[T](json)(cmp)
     }
   }
-
 }
