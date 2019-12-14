@@ -2,9 +2,10 @@ package scalapb.json4s
 
 import com.google.protobuf.struct._
 import jsontest.test3.StructTest
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.must.Matchers
 
-class StructFormatSpec extends FlatSpec with MustMatchers with JavaAssertions {
+class StructFormatSpec extends AnyFlatSpec with Matchers with JavaAssertions {
   val ListValueExample = ListValue(
     values = Seq(
       Value(Value.Kind.NumberValue(-245.0)),

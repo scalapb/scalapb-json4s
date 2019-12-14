@@ -12,11 +12,13 @@ import jsontest.test3._
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
 import org.json4s.{JDecimal, JDouble, JValue}
-import org.scalatest.{Assertion, FlatSpec, MustMatchers, OptionValues}
+import org.scalatest.{Assertion, OptionValues}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.must.Matchers
 
 class JsonFormatSpec
-    extends FlatSpec
-    with MustMatchers
+    extends AnyFlatSpec
+    with Matchers
     with OptionValues
     with JavaAssertions {
   val TestProto = MyTest().update(

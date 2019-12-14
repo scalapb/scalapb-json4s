@@ -2,9 +2,11 @@ package scalapb.json4s
 
 import com.google.protobuf.wrappers.UInt64Value
 import jsontest.test3.{MyTest3, Test3Proto, Wrapper}
-import org.scalatest.{FlatSpec, MustMatchers, OptionValues}
+import org.scalatest.OptionValues
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.must.Matchers
 
-class TypeRegistrySpec extends FlatSpec with MustMatchers with OptionValues {
+class TypeRegistrySpec extends AnyFlatSpec with Matchers with OptionValues {
   "addFile" should "add all messages in the file" in {
     val reg = TypeRegistry().addFile(Test3Proto)
 

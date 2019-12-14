@@ -6,9 +6,10 @@ import com.google.protobuf.timestamp.Timestamp
 import com.google.protobuf.util.JsonFormat.{printer => ProtobufJavaPrinter}
 import jsontest.test.WellKnownTest
 import org.json4s.jackson.JsonMethods._
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.must.Matchers
 
-class WellKnownTypesSpec extends FlatSpec with MustMatchers {
+class WellKnownTypesSpec extends AnyFlatSpec with Matchers {
   val durationProto = WellKnownTest(duration = Some(Duration(146, 3455)))
 
   "Duration serializer" should "work" in {

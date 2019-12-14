@@ -5,11 +5,13 @@ import scalapb.e2e.repeatables.RepeatablesTest.Nested
 import org.scalatest._
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 import org.scalacheck.{Arbitrary, Gen}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.must.Matchers
 
 class ArbitrarySpec
-    extends FlatSpec
+    extends AnyFlatSpec
     with ScalaCheckDrivenPropertyChecks
-    with MustMatchers {
+    with Matchers {
   val nestedGen =
     Arbitrary.arbitrary[Option[Int]].map(s => Nested(nestedField = s))
 

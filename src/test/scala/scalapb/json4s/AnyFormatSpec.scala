@@ -3,11 +3,12 @@ package scalapb.json4s
 import com.google.protobuf.any.{Any => PBAny}
 import jsontest.anytests.{AnyTest, ManyAnyTest}
 import org.json4s.jackson.JsonMethods._
-import org.scalatest.{FlatSpec, MustMatchers}
 
 import scala.language.existentials
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.must.Matchers
 
-class AnyFormatSpec extends FlatSpec with MustMatchers with JavaAssertions {
+class AnyFormatSpec extends AnyFlatSpec with Matchers with JavaAssertions {
   val RawExample = AnyTest("test")
 
   val RawJson = parse(s"""{"field":"test"}""")

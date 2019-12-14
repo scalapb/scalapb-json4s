@@ -4,12 +4,14 @@ import com.google.protobuf.{InvalidProtocolBufferException, Message}
 import jsontest.test.{EnumTest, MyEnum}
 import jsontest.test3.EnumTest3
 import jsontest.test3.MyTest3.MyEnum3
-import org.scalatest.{Assertion, FlatSpec, MustMatchers}
+import org.scalatest.Assertion
 import scalapb.GeneratedMessageCompanion
 import scalapb.JavaProtoSupport
 import com.google.protobuf.util.JsonFormat.{Parser => JavaParser}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.must.Matchers
 
-class EnumFormatSpec extends FlatSpec with MustMatchers with JavaAssertions {
+class EnumFormatSpec extends AnyFlatSpec with Matchers with JavaAssertions {
   // not ignoring unknown fields:
 
   "default parser" should "match Java behavior for string enums" in new DefaultParserContext {
