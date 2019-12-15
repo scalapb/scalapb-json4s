@@ -131,8 +131,8 @@ case class TypeRegistry(
       val withDeps: TypeRegistry =
         file.dependencies.foldLeft(withFileSeen)((r, f) => r.addFile(f))
 
-      file.messagesCompanions.foldLeft(withDeps)(
-        (r, mc) => r.addMessageByCompanion(mc.asInstanceOf[GenericCompanion])
+      file.messagesCompanions.foldLeft(withDeps)((r, mc) =>
+        r.addMessageByCompanion(mc.asInstanceOf[GenericCompanion])
       )
     }
   }
@@ -140,8 +140,8 @@ case class TypeRegistry(
   def addMessageByCompanion(cmp: GenericCompanion): TypeRegistry = {
     // TODO: need to add contained file to follow JsonFormat
     val withNestedMessages =
-      cmp.nestedMessagesCompanions.foldLeft(this)(
-        (r, mc) => r.addMessageByCompanion(mc.asInstanceOf[GenericCompanion])
+      cmp.nestedMessagesCompanions.foldLeft(this)((r, mc) =>
+        r.addMessageByCompanion(mc.asInstanceOf[GenericCompanion])
       )
     copy(
       companions = withNestedMessages.companions + ((TypeRegistry.TypePrefix + cmp.scalaDescriptor.fullName) -> cmp)
