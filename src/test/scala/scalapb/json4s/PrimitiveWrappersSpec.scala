@@ -2,7 +2,7 @@ package scalapb.json4s
 
 import com.google.protobuf.ByteString
 import jsontest.test3._
-import org.json4s.JsonAST.{JBool, JDecimal, JDouble, JString}
+import org.json4s.JsonAST.{JBool, JDecimal, JDouble, JLong, JString}
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
 import org.json4s.{JInt, JValue}
@@ -57,6 +57,12 @@ class PrimitiveWrappersSpec
     JsonFormat.toJson(Wrapper(wBytes = Some(ByteString.EMPTY))) must be(
       render(Map("wBytes" -> JString("")))
     )
+  }
+
+  "primitive values" should "serialize with printer config" in {
+    new Printer().formattingLongAsNumber.toJson(
+      Wrapper(wInt64 = Some(123456))
+    ) must be(render(Map("wInt64" -> JInt(123456))))
   }
 
   "primitive values" should "parse properly" in new DefaultParserContext {

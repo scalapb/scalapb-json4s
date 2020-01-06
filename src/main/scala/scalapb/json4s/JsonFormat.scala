@@ -370,7 +370,7 @@ class Printer private (config: Printer.PrinterConfig) {
   def serializeSingleValue(
       fd: FieldDescriptor,
       value: PValue,
-      formattingLongAsNumber: Boolean
+      formattingLongAsNumber: Boolean = config.isFormattingLongAsNumber
   ): JValue = value match {
     case PEnum(e) =>
       config.formatRegistry.getEnumWriter(e.containingEnum) match {
@@ -729,8 +729,7 @@ object JsonFormat {
     (printer, t) =>
       printer.serializeSingleValue(
         fieldDesc,
-        t.getField(fieldDesc),
-        formattingLongAsNumber = false
+        t.getField(fieldDesc)
       )
   }
 
