@@ -270,8 +270,7 @@ class Printer private (config: Printer.PrinterConfig) {
               } else {
                 serializeSingleValue(
                   valueDescriptor,
-                  x.getField(valueDescriptor),
-                  config.isFormattingLongAsNumber
+                  x.getField(valueDescriptor)
                 )
               }
               key -> value
@@ -304,7 +303,7 @@ class Printer private (config: Printer.PrinterConfig) {
             name,
             JArray(
               xs.map(
-                  serializeSingleValue(fd, _, config.isFormattingLongAsNumber)
+                  serializeSingleValue(fd, _)
                 )
                 .toList
             )
@@ -318,7 +317,7 @@ class Printer private (config: Printer.PrinterConfig) {
             fd.containingOneof.isDefined) {
           b += JField(
             name,
-            serializeSingleValue(fd, v, config.isFormattingLongAsNumber)
+            serializeSingleValue(fd, v)
           )
         }
     }
@@ -348,8 +347,7 @@ class Printer private (config: Printer.PrinterConfig) {
   private def defaultJValue(fd: FieldDescriptor): JValue =
     serializeSingleValue(
       fd,
-      JsonFormat.defaultValue(fd),
-      config.isFormattingLongAsNumber
+      JsonFormat.defaultValue(fd)
     )
 
   private def unsignedInt(n: Int): Long = n & 0X00000000FFFFFFFFL
@@ -367,10 +365,14 @@ class Printer private (config: Printer.PrinterConfig) {
     if (formattingLongAsNumber) JInt(v) else JString(v.toString())
   }
 
+  def serializeSingleValue(fd: FieldDescriptor, value: PValue): JValue = {
+    serializeSingleValue(fd, value, config.isFormattingLongAsNumber)
+  }
+
   def serializeSingleValue(
       fd: FieldDescriptor,
       value: PValue,
-      formattingLongAsNumber: Boolean = config.isFormattingLongAsNumber
+      formattingLongAsNumber: Boolean
   ): JValue = value match {
     case PEnum(e) =>
       config.formatRegistry.getEnumWriter(e.containingEnum) match {
