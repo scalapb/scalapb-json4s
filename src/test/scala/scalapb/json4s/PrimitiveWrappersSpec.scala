@@ -59,6 +59,12 @@ class PrimitiveWrappersSpec
     )
   }
 
+  "primitive values" should "serialize with printer config" in {
+    new Printer().formattingLongAsNumber.toJson(
+      Wrapper(wInt64 = Some(123456))
+    ) must be(render(Map("wInt64" -> JInt(123456))))
+  }
+
   "primitive values" should "parse properly" in new DefaultParserContext {
     assertParse(
       compact(render(Map("wBool" -> JBool(false)))),
