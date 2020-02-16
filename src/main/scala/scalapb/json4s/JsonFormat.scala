@@ -144,7 +144,8 @@ case class TypeRegistry(
         r.addMessageByCompanion(mc.asInstanceOf[GenericCompanion])
       )
     copy(
-      companions = withNestedMessages.companions + ((TypeRegistry.TypePrefix + cmp.scalaDescriptor.fullName) -> cmp)
+      companions =
+        withNestedMessages.companions + ((TypeRegistry.TypePrefix + cmp.scalaDescriptor.fullName) -> cmp)
     )
   }
 
