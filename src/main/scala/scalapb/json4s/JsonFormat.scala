@@ -115,7 +115,7 @@ case class TypeRegistry(
     companions: Map[String, GenericCompanion] = Map.empty,
     private val filesSeen: Set[String] = Set.empty
 ) {
-  def addMessage[T <: GeneratedMessage with Message[T]](
+  def addMessage[T <: GeneratedMessage](
       implicit cmp: GeneratedMessageCompanion[T]
   ): TypeRegistry = {
     addMessageByCompanion(cmp)
@@ -445,20 +445,20 @@ class Parser private (config: Parser.ParserConfig) {
 
   def typeRegistry: TypeRegistry = config.typeRegistry
 
-  def fromJsonString[A <: GeneratedMessage with Message[A]: GeneratedMessageCompanion](
+  def fromJsonString[A <: GeneratedMessage: GeneratedMessageCompanion](
       str: String
   ): A = {
     import org.json4s.jackson.JsonMethods._
     fromJson(parse(str, useBigDecimalForDouble = true))
   }
 
-  def fromJson[A <: GeneratedMessage with Message[A]: GeneratedMessageCompanion](
+  def fromJson[A <: GeneratedMessage: GeneratedMessageCompanion](
       value: JValue
   ): A = {
     fromJson(value, false)
   }
 
-  private[json4s] def fromJson[A <: GeneratedMessage with Message[A]](
+  private[json4s] def fromJson[A <: GeneratedMessage](
       value: JValue,
       skipTypeUrl: Boolean
   )(implicit cmp: GeneratedMessageCompanion[A]): A = {
@@ -636,7 +636,7 @@ object JsonFormat {
   import com.google.protobuf.wrappers
 
   type GenericCompanion = GeneratedMessageCompanion[T] forSome {
-    type T <: GeneratedMessage with Message[T]
+    type T <: GeneratedMessage
   }
 
   val DefaultRegistry = FormatRegistry()
@@ -725,7 +725,7 @@ object JsonFormat {
       AnyFormat.anyParser
     )
 
-  def primitiveWrapperWriter[T <: GeneratedMessage with Message[T]](
+  def primitiveWrapperWriter[T <: GeneratedMessage](
       implicit cmp: GeneratedMessageCompanion[T]
   ): ((Printer, T) => JValue) = {
     val fieldDesc = cmp.scalaDescriptor.findFieldByNumber(1).get
@@ -736,7 +736,7 @@ object JsonFormat {
       )
   }
 
-  def primitiveWrapperParser[T <: GeneratedMessage with Message[T]](
+  def primitiveWrapperParser[T <: GeneratedMessage](
       implicit cmp: GeneratedMessageCompanion[T]
   ): ((Parser, JValue) => T) = {
     val fieldDesc = cmp.scalaDescriptor.findFieldByNumber(1).get
@@ -763,25 +763,25 @@ object JsonFormat {
 
   def toJson[A <: GeneratedMessage](m: A): JValue = printer.toJson(m)
 
-  def fromJson[A <: GeneratedMessage with Message[A]: GeneratedMessageCompanion](
+  def fromJson[A <: GeneratedMessage: GeneratedMessageCompanion](
       value: JValue
   ): A = {
     parser.fromJson(value)
   }
 
-  def fromJsonString[A <: GeneratedMessage with Message[A]: GeneratedMessageCompanion](
+  def fromJsonString[A <: GeneratedMessage: GeneratedMessageCompanion](
       str: String
   ): A = {
     parser.fromJsonString(str)
   }
 
-  implicit def protoToReader[T <: GeneratedMessage with Message[T]: GeneratedMessageCompanion]
+  implicit def protoToReader[T <: GeneratedMessage: GeneratedMessageCompanion]
       : Reader[T] =
     new Reader[T] {
       def read(value: JValue): T = parser.fromJson(value)
     }
 
-  implicit def protoToWriter[T <: GeneratedMessage with Message[T]]: Writer[T] =
+  implicit def protoToWriter[T <: GeneratedMessage]: Writer[T] =
     new Writer[T] {
       def write(obj: T): JValue = printer.toJson(obj)
     }

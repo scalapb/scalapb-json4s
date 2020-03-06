@@ -9,7 +9,7 @@ organization in ThisBuild := "com.thesamet.scalapb"
 
 name := "scalapb-json4s"
 
-scalacOptions in ThisBuild ++= {
+scalacOptions in ThisBuild ++= Seq("-deprecation") ++ {
   CrossVersion.partialVersion(scalaVersion.value) match {
     case Some((2, v)) if v <= 11 => List("-target:jvm-1.7")
     case _                       => Nil

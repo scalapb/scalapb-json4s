@@ -52,7 +52,7 @@ trait JavaAssertions {
   val ScalaJsonPrinter =
     new Printer().withTypeRegistry(typeRegistry = ScalaTypeRegistry)
 
-  def assertJsonIsSameAsJava[T <: GeneratedMessage with Message[T]](
+  def assertJsonIsSameAsJava[T <: GeneratedMessage](
       v: T,
       checkRoundtrip: Boolean = true
   )(implicit cmp: GeneratedMessageCompanion[T]) = {
@@ -80,7 +80,7 @@ trait JavaAssertions {
     b.build()
   }
 
-  def assertParse[T <: scalapb.GeneratedMessage with scalapb.Message[T], J <: GeneratedMessageV3](
+  def assertParse[T <: scalapb.GeneratedMessage, J <: GeneratedMessageV3](
       json: String,
       expected: T
   )(
@@ -98,7 +98,7 @@ trait JavaAssertions {
     cmp.fromJavaProto(parsedJava) must be(expected)
   }
 
-  def assertFails[T <: scalapb.GeneratedMessage with scalapb.Message[T], J <: GeneratedMessageV3](
+  def assertFails[T <: scalapb.GeneratedMessage, J <: GeneratedMessageV3](
       json: String,
       cmp: GeneratedMessageCompanion[T] with JavaProtoSupport[T, J]
   )(implicit parserContext: ParserContext): Assertion = {
