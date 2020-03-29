@@ -59,7 +59,7 @@ lazy val root = (project in file("."))
     inConfig(Test)(sbtprotoc.ProtocPlugin.protobufConfigSettings)
   )
 
-PB.protocVersion := "-v3.11.1"
+PB.protocVersion := "-v3.11.4"
 
 PB.protocVersion in Proto26Test := "-v261"
 
