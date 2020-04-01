@@ -6,7 +6,7 @@ scala:
    - 2.13.1
 
 script:
-- sbt ++$TRAVIS_SCALA_VERSION scalafmtSbtCheck scalafmtCheck test:scalafmtCheck test proto26:test
+- sbt ++$TRAVIS_SCALA_VERSION scalafmtSbtCheck scalafmtCheck test:scalafmtCheck test
 # - sbt ++$TRAVIS_SCALA_VERSION mimaReportBinaryIssues;
 
 cache:

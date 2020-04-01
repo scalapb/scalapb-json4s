@@ -47,36 +47,16 @@ libraryDependencies ++= Seq(
   "com.google.protobuf" % "protobuf-java" % "3.11.4" % "protobuf"
 )
 
-lazy val Proto26Test = config("proto26") extend (Test)
-
 lazy val root = (project in file("."))
-  .configs(Proto26Test)
   .settings(
-    inConfig(Proto26Test)(
-      Defaults.testSettings ++
-        sbtprotoc.ProtocPlugin.protobufConfigSettings
-    ),
-    inConfig(Test)(sbtprotoc.ProtocPlugin.protobufConfigSettings)
+    inConfig(Test)(sbtprotoc.ProtocPlugin.protobufConfigSettings),
+    PB.protocVersion := "-v3.11.4",
+    PB.targets in Compile := Nil,
+    PB.targets in Test := Seq(
+      PB.gens.java -> (sourceManaged in Test).value,
+      scalapb.gen(javaConversions = true) -> (sourceManaged in Test).value
+    )
   )
-
-PB.protocVersion := "-v3.11.4"
-
-PB.protocVersion in Proto26Test := "-v261"
-
-PB.protoSources in Proto26Test := Seq(
-  (sourceDirectory in Proto26Test).value / "protobuf"
-)
-
-PB.targets in Compile := Nil
-
-PB.targets in Test := Seq(
-  PB.gens.java -> (sourceManaged in Test).value,
-  scalapb.gen(javaConversions = true) -> (sourceManaged in Test).value
-)
-
-PB.targets in Proto26Test := Seq(
-  scalapb.gen() -> (sourceManaged in Proto26Test).value
-)
 
 mimaPreviousArtifacts := Set(
   "com.thesamet.scalapb" %% "scalapb-json4s" % "0.10.0"
