@@ -35,7 +35,9 @@ class StructFormatSpec extends AnyFlatSpec with Matchers with JavaAssertions {
   )
 
   "Empty value" should "be serialized to null" in {
-    JavaJsonPrinter.print(com.google.protobuf.Value.newBuilder().build()) must be(
+    JavaJsonPrinter.print(
+      com.google.protobuf.Value.newBuilder().build()
+    ) must be(
       "null"
     )
     JsonFormat.toJsonString(Value()) must be("null")

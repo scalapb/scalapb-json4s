@@ -63,29 +63,30 @@ object Timestamps {
     result.toString
   }
 
-  def parseTimezoneOffset(s: String): Long = s(0) match {
-    case 'Z' =>
-      if (s.length != 1) {
-        throw new ParseException(
-          s"Failed to parse timestamp: invalid trailing data: '$s'"
-        )
-      } else {
-        0
-      }
-    case '+' | '-' =>
-      val pos = s.indexOf(':')
-      if (pos == -1) {
-        throw new ParseException(
-          s"Failed to parse timestamp: invalid offset value: '$s'"
-        )
-      } else {
-        val hours = s.substring(1, pos)
-        val minutes = s.substring(pos + 1)
-        val r = hours.toLong * 3600 + minutes.toLong * 60
-        if (s(0) == '-') -r else r
-      }
-    case _ => throw new ParseException("Failed to parse timestamp.")
-  }
+  def parseTimezoneOffset(s: String): Long =
+    s(0) match {
+      case 'Z' =>
+        if (s.length != 1) {
+          throw new ParseException(
+            s"Failed to parse timestamp: invalid trailing data: '$s'"
+          )
+        } else {
+          0
+        }
+      case '+' | '-' =>
+        val pos = s.indexOf(':')
+        if (pos == -1) {
+          throw new ParseException(
+            s"Failed to parse timestamp: invalid offset value: '$s'"
+          )
+        } else {
+          val hours = s.substring(1, pos)
+          val minutes = s.substring(pos + 1)
+          val r = hours.toLong * 3600 + minutes.toLong * 60
+          if (s(0) == '-') -r else r
+        }
+      case _ => throw new ParseException("Failed to parse timestamp.")
+    }
 
   def parseTimestamp(value: String): Timestamp = {
     val dayOffset = value.indexOf('T')

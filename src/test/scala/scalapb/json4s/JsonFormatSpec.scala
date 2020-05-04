@@ -178,10 +178,14 @@ class JsonFormatSpec
     JsonFormat.toJson(v1Value) must be(parse("""{"optEnum": "V1"}"""))
     val defaultValue = MyTest3(optEnum = MyTest3.MyEnum3.UNKNOWN)
     JsonFormat.toJson(defaultValue) must be(parse("""{}"""))
-    JsonFormat.fromJsonString[MyTest3](JsonFormat.toJsonString(v1Value)) must be(
+    JsonFormat.fromJsonString[MyTest3](
+      JsonFormat.toJsonString(v1Value)
+    ) must be(
       v1Value
     )
-    JsonFormat.fromJsonString[MyTest3](JsonFormat.toJsonString(defaultValue)) must be(
+    JsonFormat.fromJsonString[MyTest3](
+      JsonFormat.toJsonString(defaultValue)
+    ) must be(
       defaultValue
     )
   }

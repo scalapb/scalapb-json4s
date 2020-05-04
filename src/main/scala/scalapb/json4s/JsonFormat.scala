@@ -115,8 +115,8 @@ case class TypeRegistry(
     companions: Map[String, GenericCompanion] = Map.empty,
     private val filesSeen: Set[String] = Set.empty
 ) {
-  def addMessage[T <: GeneratedMessage](
-      implicit cmp: GeneratedMessageCompanion[T]
+  def addMessage[T <: GeneratedMessage](implicit
+      cmp: GeneratedMessageCompanion[T]
   ): TypeRegistry = {
     addMessageByCompanion(cmp)
   }
@@ -169,14 +169,15 @@ object Printer {
       typeRegistry: TypeRegistry
   )
 
-  private def defaultConfig = PrinterConfig(
-    isIncludingDefaultValueFields = false,
-    isPreservingProtoFieldNames = false,
-    isFormattingLongAsNumber = false,
-    isFormattingEnumsAsNumber = false,
-    formatRegistry = JsonFormat.DefaultRegistry,
-    typeRegistry = TypeRegistry.empty
-  )
+  private def defaultConfig =
+    PrinterConfig(
+      isIncludingDefaultValueFields = false,
+      isPreservingProtoFieldNames = false,
+      isFormattingLongAsNumber = false,
+      isFormattingEnumsAsNumber = false,
+      formatRegistry = JsonFormat.DefaultRegistry,
+      typeRegistry = TypeRegistry.empty
+    )
 }
 
 class Printer private (config: Printer.PrinterConfig) {
@@ -193,16 +194,17 @@ class Printer private (config: Printer.PrinterConfig) {
       formattingEnumsAsNumber: Boolean = false,
       formatRegistry: FormatRegistry = JsonFormat.DefaultRegistry,
       typeRegistry: TypeRegistry = TypeRegistry.empty
-  ) = this(
-    Printer.PrinterConfig(
-      isIncludingDefaultValueFields = includingDefaultValueFields,
-      isPreservingProtoFieldNames = preservingProtoFieldNames,
-      isFormattingLongAsNumber = formattingLongAsNumber,
-      isFormattingEnumsAsNumber = formattingEnumsAsNumber,
-      formatRegistry = formatRegistry,
-      typeRegistry = typeRegistry
+  ) =
+    this(
+      Printer.PrinterConfig(
+        isIncludingDefaultValueFields = includingDefaultValueFields,
+        isPreservingProtoFieldNames = preservingProtoFieldNames,
+        isFormattingLongAsNumber = formattingLongAsNumber,
+        isFormattingEnumsAsNumber = formattingEnumsAsNumber,
+        formatRegistry = formatRegistry,
+        typeRegistry = typeRegistry
+      )
     )
-  )
 
   def includingDefaultValueFields: Printer =
     new Printer(config.copy(isIncludingDefaultValueFields = true))
@@ -295,7 +297,9 @@ class Printer private (config: Printer.PrinterConfig) {
   ) = {
     value match {
       case PEmpty =>
-        if (config.isIncludingDefaultValueFields && fd.containingOneof.isEmpty) {
+        if (
+          config.isIncludingDefaultValueFields && fd.containingOneof.isEmpty
+        ) {
           b += JField(name, defaultJValue(fd))
         }
       case PRepeated(xs) =>
@@ -311,11 +315,13 @@ class Printer private (config: Printer.PrinterConfig) {
           )
         }
       case v =>
-        if (config.isIncludingDefaultValueFields ||
-            !fd.isOptional ||
-            !fd.file.isProto3 ||
-            (v != JsonFormat.defaultValue(fd)) ||
-            fd.containingOneof.isDefined) {
+        if (
+          config.isIncludingDefaultValueFields ||
+          !fd.isOptional ||
+          !fd.file.isProto3 ||
+          (v != JsonFormat.defaultValue(fd)) ||
+          fd.containingOneof.isDefined
+        ) {
           b += JField(
             name,
             serializeSingleValue(fd, v)
@@ -351,9 +357,9 @@ class Printer private (config: Printer.PrinterConfig) {
       JsonFormat.defaultValue(fd)
     )
 
-  private def unsignedInt(n: Int): Long = n & 0X00000000FFFFFFFFL
+  private def unsignedInt(n: Int): Long = n & 0x00000000ffffffffL
   private def unsignedLong(n: Long): BigInt =
-    if (n < 0) BigInt(n & 0X7FFFFFFFFFFFFFFFL).setBit(63) else BigInt(n)
+    if (n < 0) BigInt(n & 0x7fffffffffffffffL).setBit(63) else BigInt(n)
 
   private def formatLong(
       n: Long,
@@ -374,29 +380,30 @@ class Printer private (config: Printer.PrinterConfig) {
       fd: FieldDescriptor,
       value: PValue,
       formattingLongAsNumber: Boolean
-  ): JValue = value match {
-    case PEnum(e) =>
-      config.formatRegistry.getEnumWriter(e.containingEnum) match {
-        case Some(writer) => writer(this, e)
-        case None =>
-          if (config.isFormattingEnumsAsNumber) JInt(e.number)
-          else JString(e.name)
-      }
-    case PInt(v) if fd.protoType.isTypeUint32  => JInt(unsignedInt(v))
-    case PInt(v) if fd.protoType.isTypeFixed32 => JInt(unsignedInt(v))
-    case PInt(v)                               => JInt(v)
-    case PLong(v)                              => formatLong(v, fd.protoType, formattingLongAsNumber)
-    case PDouble(v)                            => JDouble(v)
-    case PFloat(v) =>
-      if (!v.isNaN && !v.isInfinite) JDecimal(BigDecimal.decimal(v))
-      else JDouble(v)
-    case PBoolean(v) => JBool(v)
-    case PString(v)  => JString(v)
-    case PByteString(v) =>
-      JString(Base64Variants.getDefaultVariant.encode(v.toByteArray))
-    case _: PMessage | PRepeated(_) | PEmpty =>
-      throw new RuntimeException("Should not happen")
-  }
+  ): JValue =
+    value match {
+      case PEnum(e) =>
+        config.formatRegistry.getEnumWriter(e.containingEnum) match {
+          case Some(writer) => writer(this, e)
+          case None =>
+            if (config.isFormattingEnumsAsNumber) JInt(e.number)
+            else JString(e.name)
+        }
+      case PInt(v) if fd.protoType.isTypeUint32  => JInt(unsignedInt(v))
+      case PInt(v) if fd.protoType.isTypeFixed32 => JInt(unsignedInt(v))
+      case PInt(v)                               => JInt(v)
+      case PLong(v)                              => formatLong(v, fd.protoType, formattingLongAsNumber)
+      case PDouble(v)                            => JDouble(v)
+      case PFloat(v) =>
+        if (!v.isNaN && !v.isInfinite) JDecimal(BigDecimal.decimal(v))
+        else JDouble(v)
+      case PBoolean(v) => JBool(v)
+      case PString(v)  => JString(v)
+      case PByteString(v) =>
+        JString(Base64Variants.getDefaultVariant.encode(v.toByteArray))
+      case _: PMessage | PRepeated(_) | PEmpty =>
+        throw new RuntimeException("Should not happen")
+    }
 }
 
 object Parser {
@@ -536,7 +543,9 @@ class Parser private (config: Parser.ParserConfig) {
                     val fd = fieldMap(name)
                     valueMapBuilder += (fd -> parseValue(fd, jValue))
                   }
-                } else if (!config.isIgnoringUnknownFields && !(skipTypeUrl && name == "@type")) {
+                } else if (
+                  !config.isIgnoringUnknownFields && !(skipTypeUrl && name == "@type")
+                ) {
                   throw new JsonFormatException(
                     s"Cannot find field: ${name} in message ${cmp.scalaDescriptor.fullName}"
                   )
@@ -605,31 +614,32 @@ class Parser private (config: Parser.ParserConfig) {
       containerCompanion: GeneratedMessageCompanion[_],
       fd: FieldDescriptor,
       value: JValue
-  ): PValue = fd.scalaType match {
-    case ScalaType.Enum(ed) => {
-      val res: Option[EnumValueDescriptor] =
-        config.formatRegistry.getEnumParser(ed) match {
-          case Some(parser) => parser(this, value)
-          case None         => defaultEnumParser(ed, value)
-        }
+  ): PValue =
+    fd.scalaType match {
+      case ScalaType.Enum(ed) => {
+        val res: Option[EnumValueDescriptor] =
+          config.formatRegistry.getEnumParser(ed) match {
+            case Some(parser) => parser(this, value)
+            case None         => defaultEnumParser(ed, value)
+          }
 
-      res.fold[PValue](PEmpty)(PEnum)
-    }
-    case ScalaType.Message(md) =>
-      fromJsonToPMessage(
-        containerCompanion.messageCompanionForFieldNumber(fd.number),
-        value,
-        false
-      )
-    case st =>
-      JsonFormat.parsePrimitive(
-        fd.protoType,
-        value,
-        throw new JsonFormatException(
-          s"Unexpected value ($value) for field ${fd.name} of ${fd.containingMessage.name}"
+        res.fold[PValue](PEmpty)(PEnum)
+      }
+      case ScalaType.Message(md) =>
+        fromJsonToPMessage(
+          containerCompanion.messageCompanionForFieldNumber(fd.number),
+          value,
+          false
         )
-      )
-  }
+      case st =>
+        JsonFormat.parsePrimitive(
+          fd.protoType,
+          value,
+          throw new JsonFormatException(
+            s"Unexpected value ($value) for field ${fd.name} of ${fd.containingMessage.name}"
+          )
+        )
+    }
 }
 
 object JsonFormat {
@@ -725,8 +735,8 @@ object JsonFormat {
       AnyFormat.anyParser
     )
 
-  def primitiveWrapperWriter[T <: GeneratedMessage](
-      implicit cmp: GeneratedMessageCompanion[T]
+  def primitiveWrapperWriter[T <: GeneratedMessage](implicit
+      cmp: GeneratedMessageCompanion[T]
   ): ((Printer, T) => JValue) = {
     val fieldDesc = cmp.scalaDescriptor.findFieldByNumber(1).get
     (printer, t) =>
@@ -736,8 +746,8 @@ object JsonFormat {
       )
   }
 
-  def primitiveWrapperParser[T <: GeneratedMessage](
-      implicit cmp: GeneratedMessageCompanion[T]
+  def primitiveWrapperParser[T <: GeneratedMessage](implicit
+      cmp: GeneratedMessageCompanion[T]
   ): ((Parser, JValue) => T) = {
     val fieldDesc = cmp.scalaDescriptor.findFieldByNumber(1).get
     (parser, jv) =>
@@ -815,75 +825,76 @@ object JsonFormat {
       protoType: FieldDescriptorProto.Type,
       value: JValue,
       onError: => PValue
-  ): PValue = (protoType, value) match {
-    case (Type.TYPE_UINT32 | Type.TYPE_FIXED32, JInt(x)) =>
-      parseUint32(x.toString)
-    case (Type.TYPE_UINT32 | Type.TYPE_FIXED32, JDouble(x)) =>
-      parseUint32(x.toString)
-    case (Type.TYPE_UINT32 | Type.TYPE_FIXED32, JDecimal(x)) =>
-      parseUint32(x.toString)
-    case (Type.TYPE_UINT32 | Type.TYPE_FIXED32, JString(x)) => parseUint32(x)
-    case (Type.TYPE_SINT32 | Type.TYPE_INT32 | Type.TYPE_SFIXED32, JInt(x)) =>
-      parseInt32(x.toString)
-    case (
-        Type.TYPE_SINT32 | Type.TYPE_INT32 | Type.TYPE_SFIXED32,
-        JDouble(x)
-        ) =>
-      parseInt32(x.toString)
-    case (
-        Type.TYPE_SINT32 | Type.TYPE_INT32 | Type.TYPE_SFIXED32,
-        JDecimal(x)
-        ) =>
-      parseInt32(x.toString)
-    case (
-        Type.TYPE_SINT32 | Type.TYPE_INT32 | Type.TYPE_SFIXED32,
-        JString(x)
-        ) =>
-      parseInt32(x)
+  ): PValue =
+    (protoType, value) match {
+      case (Type.TYPE_UINT32 | Type.TYPE_FIXED32, JInt(x)) =>
+        parseUint32(x.toString)
+      case (Type.TYPE_UINT32 | Type.TYPE_FIXED32, JDouble(x)) =>
+        parseUint32(x.toString)
+      case (Type.TYPE_UINT32 | Type.TYPE_FIXED32, JDecimal(x)) =>
+        parseUint32(x.toString)
+      case (Type.TYPE_UINT32 | Type.TYPE_FIXED32, JString(x)) => parseUint32(x)
+      case (Type.TYPE_SINT32 | Type.TYPE_INT32 | Type.TYPE_SFIXED32, JInt(x)) =>
+        parseInt32(x.toString)
+      case (
+            Type.TYPE_SINT32 | Type.TYPE_INT32 | Type.TYPE_SFIXED32,
+            JDouble(x)
+          ) =>
+        parseInt32(x.toString)
+      case (
+            Type.TYPE_SINT32 | Type.TYPE_INT32 | Type.TYPE_SFIXED32,
+            JDecimal(x)
+          ) =>
+        parseInt32(x.toString)
+      case (
+            Type.TYPE_SINT32 | Type.TYPE_INT32 | Type.TYPE_SFIXED32,
+            JString(x)
+          ) =>
+        parseInt32(x)
 
-    case (Type.TYPE_UINT64 | Type.TYPE_FIXED64, JInt(x)) =>
-      parseUint64(x.toString)
-    case (Type.TYPE_UINT64 | Type.TYPE_FIXED64, JDouble(x)) =>
-      parseUint64(x.toString)
-    case (Type.TYPE_UINT64 | Type.TYPE_FIXED64, JDecimal(x)) =>
-      parseUint64(x.toString)
-    case (Type.TYPE_UINT64 | Type.TYPE_FIXED64, JString(x)) => parseUint64(x)
-    case (Type.TYPE_SINT64 | Type.TYPE_INT64 | Type.TYPE_SFIXED64, JInt(x)) =>
-      parseInt64(x.toString)
-    case (
-        Type.TYPE_SINT64 | Type.TYPE_INT64 | Type.TYPE_SFIXED64,
-        JDouble(x)
-        ) =>
-      parseInt64(x.toString)
-    case (
-        Type.TYPE_SINT64 | Type.TYPE_INT64 | Type.TYPE_SFIXED64,
-        JDecimal(x)
-        ) =>
-      parseInt64(x.toString)
-    case (
-        Type.TYPE_SINT64 | Type.TYPE_INT64 | Type.TYPE_SFIXED64,
-        JString(x)
-        ) =>
-      parseInt64(x)
+      case (Type.TYPE_UINT64 | Type.TYPE_FIXED64, JInt(x)) =>
+        parseUint64(x.toString)
+      case (Type.TYPE_UINT64 | Type.TYPE_FIXED64, JDouble(x)) =>
+        parseUint64(x.toString)
+      case (Type.TYPE_UINT64 | Type.TYPE_FIXED64, JDecimal(x)) =>
+        parseUint64(x.toString)
+      case (Type.TYPE_UINT64 | Type.TYPE_FIXED64, JString(x)) => parseUint64(x)
+      case (Type.TYPE_SINT64 | Type.TYPE_INT64 | Type.TYPE_SFIXED64, JInt(x)) =>
+        parseInt64(x.toString)
+      case (
+            Type.TYPE_SINT64 | Type.TYPE_INT64 | Type.TYPE_SFIXED64,
+            JDouble(x)
+          ) =>
+        parseInt64(x.toString)
+      case (
+            Type.TYPE_SINT64 | Type.TYPE_INT64 | Type.TYPE_SFIXED64,
+            JDecimal(x)
+          ) =>
+        parseInt64(x.toString)
+      case (
+            Type.TYPE_SINT64 | Type.TYPE_INT64 | Type.TYPE_SFIXED64,
+            JString(x)
+          ) =>
+        parseInt64(x)
 
-    case (Type.TYPE_DOUBLE, JDouble(x))     => parseDouble(x.toString)
-    case (Type.TYPE_DOUBLE, JInt(x))        => parseDouble(x.toString)
-    case (Type.TYPE_DOUBLE, JDecimal(x))    => parseDouble(x.toString)
-    case (Type.TYPE_DOUBLE, JString(v))     => parseDouble(v)
-    case (Type.TYPE_FLOAT, JDouble(x))      => parseFloat(x.toString)
-    case (Type.TYPE_FLOAT, JInt(x))         => parseFloat(x.toString)
-    case (Type.TYPE_FLOAT, JDecimal(x))     => parseFloat(x.toString)
-    case (Type.TYPE_FLOAT, JString(v))      => parseFloat(v)
-    case (Type.TYPE_BOOL, JBool(b))         => PBoolean(b)
-    case (Type.TYPE_BOOL, JString("true"))  => PBoolean(true)
-    case (Type.TYPE_BOOL, JString("false")) => PBoolean(false)
-    case (Type.TYPE_STRING, JString(s))     => PString(s)
-    case (Type.TYPE_BYTES, JString(s)) =>
-      PByteString(
-        ByteString.copyFrom(Base64Variants.getDefaultVariant.decode(s))
-      )
-    case _ => onError
-  }
+      case (Type.TYPE_DOUBLE, JDouble(x))     => parseDouble(x.toString)
+      case (Type.TYPE_DOUBLE, JInt(x))        => parseDouble(x.toString)
+      case (Type.TYPE_DOUBLE, JDecimal(x))    => parseDouble(x.toString)
+      case (Type.TYPE_DOUBLE, JString(v))     => parseDouble(v)
+      case (Type.TYPE_FLOAT, JDouble(x))      => parseFloat(x.toString)
+      case (Type.TYPE_FLOAT, JInt(x))         => parseFloat(x.toString)
+      case (Type.TYPE_FLOAT, JDecimal(x))     => parseFloat(x.toString)
+      case (Type.TYPE_FLOAT, JString(v))      => parseFloat(v)
+      case (Type.TYPE_BOOL, JBool(b))         => PBoolean(b)
+      case (Type.TYPE_BOOL, JString("true"))  => PBoolean(true)
+      case (Type.TYPE_BOOL, JString("false")) => PBoolean(false)
+      case (Type.TYPE_STRING, JString(s))     => PString(s)
+      case (Type.TYPE_BYTES, JString(s)) =>
+        PByteString(
+          ByteString.copyFrom(Base64Variants.getDefaultVariant.decode(s))
+        )
+      case _ => onError
+    }
 
   def parseBigDecimal(value: String): BigDecimal = {
     try {
@@ -929,7 +940,7 @@ object JsonFormat {
   def parseUint32(value: String): PValue = {
     try {
       val result = value.toLong
-      if (result < 0 || result > 0XFFFFFFFFL)
+      if (result < 0 || result > 0xffffffffL)
         throw new JsonFormatException(s"Out of range uint32 value: $value")
       return PInt(result.toInt)
     } catch {
@@ -937,7 +948,7 @@ object JsonFormat {
       case e: Exception           => // Fall through.
     }
     parseBigDecimal(value).toBigIntExact.map { intVal =>
-      if (intVal < 0 || intVal > 0XFFFFFFFFL)
+      if (intVal < 0 || intVal > 0xffffffffL)
         throw new JsonFormatException(s"Out of range uint32 value: $value")
       PLong(intVal.intValue)
     } getOrElse {
@@ -958,42 +969,46 @@ object JsonFormat {
     }
   }
 
-  def parseDouble(value: String): PDouble = value match {
-    case "NaN"       => PDouble(Double.NaN)
-    case "Infinity"  => PDouble(Double.PositiveInfinity)
-    case "-Infinity" => PDouble(Double.NegativeInfinity)
-    case v =>
-      try {
-        val bd = new java.math.BigDecimal(v)
-        if (bd.compareTo(MAX_DOUBLE) > 0 || bd.compareTo(MIN_DOUBLE) < 0) {
-          throw new JsonFormatException("Out of range double value: " + v)
+  def parseDouble(value: String): PDouble =
+    value match {
+      case "NaN"       => PDouble(Double.NaN)
+      case "Infinity"  => PDouble(Double.PositiveInfinity)
+      case "-Infinity" => PDouble(Double.NegativeInfinity)
+      case v =>
+        try {
+          val bd = new java.math.BigDecimal(v)
+          if (bd.compareTo(MAX_DOUBLE) > 0 || bd.compareTo(MIN_DOUBLE) < 0) {
+            throw new JsonFormatException("Out of range double value: " + v)
+          }
+          PDouble(bd.doubleValue)
+        } catch {
+          case e: JsonFormatException => throw e
+          case e: Exception =>
+            throw new JsonFormatException("Not a double value: " + v)
         }
-        PDouble(bd.doubleValue)
-      } catch {
-        case e: JsonFormatException => throw e
-        case e: Exception =>
-          throw new JsonFormatException("Not a double value: " + v)
-      }
-  }
+    }
 
-  def parseFloat(str: String): PFloat = str match {
-    case "NaN"       => PFloat(Float.NaN)
-    case "Infinity"  => PFloat(Float.PositiveInfinity)
-    case "-Infinity" => PFloat(Float.NegativeInfinity)
-    case v =>
-      try {
-        val value = java.lang.Double.parseDouble(v)
-        if ((value > Float.MaxValue * (1.0 + EPSILON)) ||
-            (value < -Float.MaxValue * (1.0 + EPSILON))) {
-          throw new JsonFormatException("Out of range float value: " + value)
+  def parseFloat(str: String): PFloat =
+    str match {
+      case "NaN"       => PFloat(Float.NaN)
+      case "Infinity"  => PFloat(Float.PositiveInfinity)
+      case "-Infinity" => PFloat(Float.NegativeInfinity)
+      case v =>
+        try {
+          val value = java.lang.Double.parseDouble(v)
+          if (
+            (value > Float.MaxValue * (1.0 + EPSILON)) ||
+            (value < -Float.MaxValue * (1.0 + EPSILON))
+          ) {
+            throw new JsonFormatException("Out of range float value: " + value)
+          }
+          PFloat(value.toFloat)
+        } catch {
+          case e: JsonFormatException => throw e
+          case e: Exception =>
+            throw new JsonFormatException("Not a float value: " + v)
         }
-        PFloat(value.toFloat)
-      } catch {
-        case e: JsonFormatException => throw e
-        case e: Exception =>
-          throw new JsonFormatException("Not a float value: " + v)
-      }
-  }
+    }
 
   def jsonName(fd: FieldDescriptor): String = {
     // protoc<3 doesn't know about json_name, so we fill it in if it's not populated.
