@@ -7,7 +7,7 @@ crossScalaVersions := Seq("2.12.10", "2.13.1")
 
 organization in ThisBuild := "com.thesamet.scalapb"
 
-name := "scalapb-json4s"
+name := "bc-scalapb-json4s"
 
 scalacOptions in ThisBuild ++= Seq("-deprecation") ++ {
   CrossVersion.partialVersion(scalaVersion.value) match {

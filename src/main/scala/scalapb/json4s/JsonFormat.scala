@@ -161,12 +161,13 @@ object TypeRegistry {
 
 object Printer {
   private final case class PrinterConfig(
-      isIncludingDefaultValueFields: Boolean,
-      isPreservingProtoFieldNames: Boolean,
-      isFormattingLongAsNumber: Boolean,
-      isFormattingEnumsAsNumber: Boolean,
-      formatRegistry: FormatRegistry,
-      typeRegistry: TypeRegistry
+    isIncludingDefaultValueFields: Boolean,
+    isPreservingProtoFieldNames: Boolean,
+    isFormattingLongAsNumber: Boolean,
+    isFormattingEnumsAsNumber: Boolean,
+    formatRegistry: FormatRegistry,
+    typeRegistry: TypeRegistry,
+    enumNameTransform: PartialFunction[String, String]
   )
 
   private def defaultConfig =
@@ -176,7 +177,10 @@ object Printer {
       isFormattingLongAsNumber = false,
       isFormattingEnumsAsNumber = false,
       formatRegistry = JsonFormat.DefaultRegistry,
-      typeRegistry = TypeRegistry.empty
+      typeRegistry = TypeRegistry.empty,
+      enumNameTransform = {
+        case "" => ""
+      }
     )
 }
 
@@ -193,7 +197,10 @@ class Printer private (config: Printer.PrinterConfig) {
       formattingLongAsNumber: Boolean = false,
       formattingEnumsAsNumber: Boolean = false,
       formatRegistry: FormatRegistry = JsonFormat.DefaultRegistry,
-      typeRegistry: TypeRegistry = TypeRegistry.empty
+      typeRegistry: TypeRegistry = TypeRegistry.empty,
+      enumNameTransform: PartialFunction[String, String] = {
+        case "" => ""
+      }
   ) =
     this(
       Printer.PrinterConfig(
@@ -202,7 +209,8 @@ class Printer private (config: Printer.PrinterConfig) {
         isFormattingLongAsNumber = formattingLongAsNumber,
         isFormattingEnumsAsNumber = formattingEnumsAsNumber,
         formatRegistry = formatRegistry,
-        typeRegistry = typeRegistry
+        typeRegistry = typeRegistry,
+        enumNameTransform = enumNameTransform
       )
     )
 
@@ -223,6 +231,9 @@ class Printer private (config: Printer.PrinterConfig) {
 
   def withTypeRegistry(typeRegistry: TypeRegistry): Printer =
     new Printer(config.copy(typeRegistry = typeRegistry))
+  
+  def withEnumNameTransform(enumNameTransform: PartialFunction[String, String]) =
+    new Printer(config.copy(enumNameTransform = enumNameTransform))
 
   def typeRegistry: TypeRegistry = config.typeRegistry
 
@@ -387,7 +398,7 @@ class Printer private (config: Printer.PrinterConfig) {
           case Some(writer) => writer(this, e)
           case None =>
             if (config.isFormattingEnumsAsNumber) JInt(e.number)
-            else JString(e.name)
+            else JString(config.enumNameTransform.applyOrElse[String, String](e.name, identity))
         }
       case PInt(v) if fd.protoType.isTypeUint32  => JInt(unsignedInt(v))
       case PInt(v) if fd.protoType.isTypeFixed32 => JInt(unsignedInt(v))
