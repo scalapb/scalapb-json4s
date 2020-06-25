@@ -407,11 +407,15 @@ class Printer private (config: Printer.PrinterConfig) {
 }
 
 object Parser {
-  private final case class ParserConfig(
+  type DefaultEnumParser = ParserConfig => (EnumDescriptor, JValue) => Option[EnumValueDescriptor]
+
+  final case class ParserConfig(
       isIgnoringUnknownFields: Boolean,
       formatRegistry: FormatRegistry,
-      typeRegistry: TypeRegistry
+      typeRegistry: TypeRegistry,
+      defaultEnumParser: Option[DefaultEnumParser]
   )
+
 }
 
 class Parser private (config: Parser.ParserConfig) {
@@ -420,7 +424,8 @@ class Parser private (config: Parser.ParserConfig) {
       Parser.ParserConfig(
         isIgnoringUnknownFields = false,
         JsonFormat.DefaultRegistry,
-        TypeRegistry.empty
+        TypeRegistry.empty,
+        None
       )
     )
 
@@ -437,7 +442,8 @@ class Parser private (config: Parser.ParserConfig) {
       Parser.ParserConfig(
         isIgnoringUnknownFields = false,
         formatRegistry,
-        typeRegistry
+        typeRegistry,
+        None
       )
     )
 
@@ -450,7 +456,12 @@ class Parser private (config: Parser.ParserConfig) {
   def withTypeRegistry(typeRegistry: TypeRegistry) =
     new Parser(config.copy(typeRegistry = typeRegistry))
 
+  def withDefaultEnumParser(enumParser: Parser.DefaultEnumParser) =
+    new Parser(config.copy(defaultEnumParser = Some(enumParser)))
+
   def typeRegistry: TypeRegistry = config.typeRegistry
+
+  val defaultEnumParser: (EnumDescriptor, JValue) => Option[EnumValueDescriptor] = config.defaultEnumParser.map(_(config)).getOrElse(builtInDefaultEnumParser)
 
   def fromJsonString[A <: GeneratedMessage: GeneratedMessageCompanion](
       str: String
@@ -559,7 +570,7 @@ class Parser private (config: Parser.ParserConfig) {
     }
   }
 
-  def defaultEnumParser(
+  def builtInDefaultEnumParser(
       enumDescriptor: EnumDescriptor,
       value: JValue
   ): Option[EnumValueDescriptor] = {
