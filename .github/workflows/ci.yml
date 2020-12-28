@@ -9,7 +9,7 @@ jobs:
     - uses: actions/checkout@v2
     - uses: olafurpg/setup-scala@v10
       with:
-        java-version: 11
+        java-version: 8
     - name: Mount caches
       uses: actions/cache@v2
       with:
@@ -20,7 +20,7 @@ jobs:
         key: ${{ runner.os }}-sbt-${{ hashFiles('**/*.sbt') }}
     - name: Compile and test
       run: |
-       sbt test
+       sbt +test
       shell: bash
     - name: Format check
       run: |
