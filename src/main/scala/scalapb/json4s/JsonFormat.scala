@@ -37,20 +37,33 @@ case class EnumFormatter[T](
 )
 
 case class FormatRegistry(
-    messageFormatters: Map[Class[_], Formatter[_]] = Map.empty,
+    messageFormatters: Map[GeneratedMessageCompanion[_], Formatter[_]] =
+      Map.empty,
     enumFormatters: Map[EnumDescriptor, EnumFormatter[EnumValueDescriptor]] =
       Map.empty,
     registeredCompanions: Seq[GenericCompanion] = Seq.empty
 ) {
+  private def companionForClass[T <: GeneratedMessage](
+      ct: Class[_]
+  ): GeneratedMessageCompanion[T] = {
+    ct
+      .getMethod("companion")
+      .getReturnType()
+      .getField("MODULE$")
+      .get(null)
+      .asInstanceOf[GeneratedMessageCompanion[T]]
+  }
+
   def registerMessageFormatter[T <: GeneratedMessage](
       writer: (Printer, T) => JValue,
       parser: (Parser, JValue) => T
   )(implicit ct: ClassTag[T]): FormatRegistry = {
     copy(
-      messageFormatters = messageFormatters + (ct.runtimeClass -> Formatter(
-        writer,
-        parser
-      ))
+      messageFormatters =
+        messageFormatters + (companionForClass[T](ct.runtimeClass) -> Formatter(
+          writer,
+          parser
+        ))
     )
   }
 
@@ -76,20 +89,46 @@ case class FormatRegistry(
     )
   }
 
-  def getMessageWriter[T](
-      klass: Class[_ <: T]
+  def getMessageWriter[T <: GeneratedMessage](implicit
+      cmp: GeneratedMessageCompanion[T]
   ): Option[(Printer, T) => JValue] = {
     messageFormatters
-      .get(klass)
+      .get(cmp)
       .asInstanceOf[Option[Formatter[T]]]
       .map(_.writer)
   }
 
+  @deprecated(
+    "Use getMessageWriter that takes an implicit GeneratedMessageCompanion",
+    "0.10.2"
+  )
+  def getMessageWriter[T](
+      klass: Class[_ <: T]
+  ): Option[(Printer, T) => JValue] = {
+    messageFormatters
+      .get(companionForClass(klass))
+      .asInstanceOf[Option[Formatter[T]]]
+      .map(_.writer)
+  }
+
+  def getMessageParser[T <: GeneratedMessage](implicit
+      cmp: GeneratedMessageCompanion[T]
+  ): Option[(Parser, JValue) => T] = {
+    messageFormatters
+      .get(cmp)
+      .asInstanceOf[Option[Formatter[T]]]
+      .map(_.parser)
+  }
+
+  @deprecated(
+    "Use getMessageParser that takes an implicit GeneratedMessageCompanion",
+    "0.10.2"
+  )
   def getMessageParser[T](
       klass: Class[_ <: T]
   ): Option[(Parser, JValue) => T] = {
     messageFormatters
-      .get(klass)
+      .get(companionForClass(klass))
       .asInstanceOf[Option[Formatter[T]]]
       .map(_.parser)
   }
@@ -330,7 +369,9 @@ class Printer private (config: Printer.PrinterConfig) {
   }
 
   def toJson[A <: GeneratedMessage](m: A): JValue = {
-    config.formatRegistry.getMessageWriter[A](m.getClass) match {
+    config.formatRegistry.getMessageWriter[A](
+      m.companion.asInstanceOf[GeneratedMessageCompanion[A]]
+    ) match {
       case Some(f) => f(this, m)
       case None =>
         val b = List.newBuilder[JField]
@@ -527,8 +568,10 @@ class Parser private (config: Parser.ParserConfig) {
       } else parseSingleValue(cmp, fd, value)
     }
 
-    config.formatRegistry.getMessageParser(cmp.defaultInstance.getClass) match {
-      case Some(p) => p(this, value).asInstanceOf[GeneratedMessage].toPMessage
+    config.formatRegistry.getMessageParser(
+      cmp.asInstanceOf[GeneratedMessageCompanion[GeneratedMessage]]
+    ) match {
+      case Some(p) => p(this, value).toPMessage
       case None =>
         value match {
           case JObject(fields) =>
