@@ -1,9 +1,9 @@
 import ReleaseTransformations._
 import scalapb.compiler.Version.scalapbVersion
 
-scalaVersion := "2.13.1"
+scalaVersion := "2.13.4"
 
-crossScalaVersions := Seq("2.12.10", "2.13.1")
+crossScalaVersions := Seq("2.12.12", "2.13.4")
 
 organization in ThisBuild := "com.thesamet.scalapb"
 
@@ -50,7 +50,7 @@ libraryDependencies ++= Seq(
 lazy val root = (project in file("."))
   .settings(
     inConfig(Test)(sbtprotoc.ProtocPlugin.protobufConfigSettings),
-    PB.protocVersion := "-v3.11.4",
+    PB.protocVersion := "3.11.4",
     PB.targets in Compile := Nil,
     PB.targets in Test := Seq(
       PB.gens.java -> (sourceManaged in Test).value,
