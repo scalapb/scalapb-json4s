@@ -204,6 +204,7 @@ object Printer {
       isPreservingProtoFieldNames: Boolean,
       isFormattingLongAsNumber: Boolean,
       isFormattingEnumsAsNumber: Boolean,
+      isFormattingMapEntriesAsKeyValuePairs: Boolean,
       formatRegistry: FormatRegistry,
       typeRegistry: TypeRegistry
   )
@@ -214,6 +215,7 @@ object Printer {
       isPreservingProtoFieldNames = false,
       isFormattingLongAsNumber = false,
       isFormattingEnumsAsNumber = false,
+      isFormattingMapEntriesAsKeyValuePairs = false,
       formatRegistry = JsonFormat.DefaultRegistry,
       typeRegistry = TypeRegistry.empty
     )
@@ -231,6 +233,7 @@ class Printer private (config: Printer.PrinterConfig) {
       preservingProtoFieldNames: Boolean = false,
       formattingLongAsNumber: Boolean = false,
       formattingEnumsAsNumber: Boolean = false,
+      mapEntriesAsKeyValuePairs: Boolean = false,
       formatRegistry: FormatRegistry = JsonFormat.DefaultRegistry,
       typeRegistry: TypeRegistry = TypeRegistry.empty
   ) =
@@ -240,6 +243,7 @@ class Printer private (config: Printer.PrinterConfig) {
         isPreservingProtoFieldNames = preservingProtoFieldNames,
         isFormattingLongAsNumber = formattingLongAsNumber,
         isFormattingEnumsAsNumber = formattingEnumsAsNumber,
+        isFormattingMapEntriesAsKeyValuePairs = mapEntriesAsKeyValuePairs,
         formatRegistry = formatRegistry,
         typeRegistry = typeRegistry
       )
@@ -256,6 +260,9 @@ class Printer private (config: Printer.PrinterConfig) {
 
   def formattingEnumsAsNumber: Printer =
     new Printer(config.copy(isFormattingEnumsAsNumber = true))
+
+  def mapEntriesAsKeyValuePairs: Printer =
+    new Printer(config.copy(isFormattingMapEntriesAsKeyValuePairs = true))
 
   def withFormatRegistry(formatRegistry: FormatRegistry): Printer =
     new Printer(config.copy(formatRegistry = formatRegistry))
@@ -283,10 +290,15 @@ class Printer private (config: Printer.PrinterConfig) {
       // We are never printing empty optional messages to prevent infinite recursion.
       case Nil =>
         if (config.isIncludingDefaultValueFields) {
-          b += JField(name, if (fd.isMapField) JObject() else JArray(Nil))
+          b += JField(
+            name,
+            if (fd.isMapField && !config.isFormattingMapEntriesAsKeyValuePairs)
+              JObject()
+            else JArray(Nil)
+          )
         }
       case xs: Iterable[GeneratedMessage] @unchecked =>
-        if (fd.isMapField) {
+        if (fd.isMapField && !config.isFormattingMapEntriesAsKeyValuePairs) {
           val mapEntryDescriptor =
             fd.scalaType.asInstanceOf[ScalaType.Message].descriptor
           val keyDescriptor = mapEntryDescriptor.findFieldByNumber(1).get
@@ -449,6 +461,7 @@ class Printer private (config: Printer.PrinterConfig) {
 object Parser {
   private final case class ParserConfig(
       isIgnoringUnknownFields: Boolean,
+      mapEntriesAsKeyValuePairs: Boolean,
       formatRegistry: FormatRegistry,
       typeRegistry: TypeRegistry
   )
@@ -459,6 +472,7 @@ class Parser private (config: Parser.ParserConfig) {
     this(
       Parser.ParserConfig(
         isIgnoringUnknownFields = false,
+        mapEntriesAsKeyValuePairs = false,
         JsonFormat.DefaultRegistry,
         TypeRegistry.empty
       )
@@ -476,6 +490,7 @@ class Parser private (config: Parser.ParserConfig) {
     this(
       Parser.ParserConfig(
         isIgnoringUnknownFields = false,
+        mapEntriesAsKeyValuePairs = false,
         formatRegistry,
         typeRegistry
       )
@@ -483,6 +498,9 @@ class Parser private (config: Parser.ParserConfig) {
 
   def ignoringUnknownFields: Parser =
     new Parser(config.copy(isIgnoringUnknownFields = true))
+
+  def mapEntriesAsKeyValuePairs: Parser =
+    new Parser(config.copy(mapEntriesAsKeyValuePairs = true))
 
   def withFormatRegistry(formatRegistry: FormatRegistry) =
     new Parser(config.copy(formatRegistry = formatRegistry))
@@ -518,7 +536,7 @@ class Parser private (config: Parser.ParserConfig) {
       skipTypeUrl: Boolean
   ): PMessage = {
     def parseValue(fd: FieldDescriptor, value: JValue): PValue = {
-      if (fd.isMapField) {
+      if (fd.isMapField && !config.mapEntriesAsKeyValuePairs) {
         value match {
           case JObject(vals) =>
             val mapEntryDesc =
