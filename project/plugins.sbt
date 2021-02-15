@@ -4,7 +4,7 @@ addSbtPlugin("com.github.gseitz" % "sbt-release" % "1.0.13")
 
 addSbtPlugin("org.xerial.sbt" % "sbt-sonatype" % "3.9.5")
 
-addSbtPlugin("com.thesamet" % "sbt-protoc" % "1.0.0")
+addSbtPlugin("com.thesamet" % "sbt-protoc" % "1.0.1")
 libraryDependencies += "com.thesamet.scalapb" %% "compilerplugin" % "0.10.11"
 
 addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.8.1")
