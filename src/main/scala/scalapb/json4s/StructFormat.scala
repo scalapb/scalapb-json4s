@@ -3,6 +3,7 @@ package scalapb.json4s
 import com.google.protobuf.struct.Value.Kind
 import org.json4s.JsonAST._
 import com.google.protobuf.struct
+import scala.collection.compat._
 
 object StructFormat {
   def structValueWriter(v: struct.Value): JValue =
@@ -43,7 +44,7 @@ object StructFormat {
     }
 
   def structWriter(v: struct.Struct): JValue =
-    JObject(v.fields.mapValues(structValueWriter).toList)
+    JObject(v.fields.view.mapValues(structValueWriter(_)).toList)
 
   def listValueParser(v: JValue): struct.ListValue =
     v match {
@@ -53,7 +54,7 @@ object StructFormat {
     }
 
   def listValueWriter(v: struct.ListValue): JArray =
-    JArray(v.values.map(structValueWriter).toList)
+    JArray(v.values.map(structValueWriter(_)).toList)
 
   def nullValueParser(v: JValue): struct.NullValue =
     v match {
