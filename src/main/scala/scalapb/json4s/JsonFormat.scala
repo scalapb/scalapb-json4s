@@ -298,45 +298,50 @@ class Printer private (config: Printer.PrinterConfig) {
           )
         }
       case xs: Iterable[GeneratedMessage] @unchecked =>
-        if (fd.isMapField && !config.isFormattingMapEntriesAsKeyValuePairs) {
-          val mapEntryDescriptor =
-            fd.scalaType.asInstanceOf[ScalaType.Message].descriptor
-          val keyDescriptor = mapEntryDescriptor.findFieldByNumber(1).get
-          val valueDescriptor = mapEntryDescriptor.findFieldByNumber(2).get
-          b += JField(
-            name,
-            JObject(xs.map { x =>
-              val key = x.getField(keyDescriptor) match {
-                case PBoolean(v) => v.toString
-                case PDouble(v)  => v.toString
-                case PFloat(v)   => v.toString
-                case PInt(v)     => v.toString
-                case PLong(v)    => v.toString
-                case PString(v)  => v
-                case v =>
-                  throw new JsonFormatException(s"Unexpected value for key: $v")
-              }
-              val value = if (valueDescriptor.protoType.isTypeMessage) {
-                toJson(
-                  x.getFieldByNumber(valueDescriptor.number)
-                    .asInstanceOf[GeneratedMessage]
-                )
-              } else {
-                serializeSingleValue(
-                  valueDescriptor,
-                  x.getField(valueDescriptor)
-                )
-              }
-              key -> value
-            }.toSeq: _*)
-          )
-        } else {
-          b += JField(name, JArray(xs.map(toJson).toList))
-        }
+        serializeIterable(xs)
+      case array: Array[GeneratedMessage] =>
+        serializeIterable(array)
       case msg: GeneratedMessage =>
         b += JField(name, toJson(msg))
       case v =>
         throw new JsonFormatException(v.toString)
+    }
+    def serializeIterable(xs: Iterable[GeneratedMessage]) = {
+      if (fd.isMapField && !config.isFormattingMapEntriesAsKeyValuePairs) {
+        val mapEntryDescriptor =
+          fd.scalaType.asInstanceOf[ScalaType.Message].descriptor
+        val keyDescriptor = mapEntryDescriptor.findFieldByNumber(1).get
+        val valueDescriptor = mapEntryDescriptor.findFieldByNumber(2).get
+        b += JField(
+          name,
+          JObject(xs.map { x =>
+            val key = x.getField(keyDescriptor) match {
+              case PBoolean(v) => v.toString
+              case PDouble(v) => v.toString
+              case PFloat(v) => v.toString
+              case PInt(v) => v.toString
+              case PLong(v) => v.toString
+              case PString(v) => v
+              case v =>
+                throw new JsonFormatException(s"Unexpected value for key: $v")
+            }
+            val value = if (valueDescriptor.protoType.isTypeMessage) {
+              toJson(
+                x.getFieldByNumber(valueDescriptor.number)
+                  .asInstanceOf[GeneratedMessage]
+              )
+            } else {
+              serializeSingleValue(
+                valueDescriptor,
+                x.getField(valueDescriptor)
+              )
+            }
+            key -> value
+          }.toSeq: _*)
+        )
+      } else {
+        b += JField(name, JArray(xs.map(toJson).toList))
+      }
     }
   }
 
