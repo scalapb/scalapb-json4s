@@ -10,3 +10,9 @@ message Guitar {
 message Studio {
   repeated Guitar guitars = 1 [(scalapb.field).collection_type = "Set"];
 }
+
+import "google/protobuf/wrappers.proto";
+
+message GoogleWrapped {
+  repeated google.protobuf.StringValue strings = 1 [(scalapb.field).collection_type = "scala.collection.immutable.Seq"];
+}
