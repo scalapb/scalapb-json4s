@@ -1,23 +1,25 @@
 package scalapb.json4s
 
-import _root_.scalapb.descriptors._
 import com.fasterxml.jackson.core.Base64Variants
 import com.google.protobuf.ByteString
 import com.google.protobuf.descriptor.FieldDescriptorProto
-import com.google.protobuf.descriptor.FieldDescriptorProto.Type
 import com.google.protobuf.duration.Duration
-import com.google.protobuf.field_mask.FieldMask
 import com.google.protobuf.struct.NullValue
 import com.google.protobuf.timestamp.Timestamp
+import scalapb.json4s.JsonFormat.GenericCompanion
+import scalapb._
 import org.json4s.JsonAST._
 import org.json4s.{Reader, Writer}
-import scalapb._
-import scalapb.json4s.JsonFormat.GenericCompanion
 
-import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
+import scala.collection.concurrent.TrieMap
 import scala.language.existentials
 import scala.reflect.ClassTag
+import _root_.scalapb.descriptors._
+import com.google.protobuf.descriptor.FieldDescriptorProto.Type
+import com.google.protobuf.field_mask.FieldMask
+
+import scala.util.Try
 
 case class JsonFormatException(msg: String, cause: Exception)
     extends Exception(msg, cause) {
