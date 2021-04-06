@@ -317,11 +317,11 @@ class Printer private (config: Printer.PrinterConfig) {
           JObject(xs.map { x =>
             val key = x.getField(keyDescriptor) match {
               case PBoolean(v) => v.toString
-              case PDouble(v) => v.toString
-              case PFloat(v) => v.toString
-              case PInt(v) => v.toString
-              case PLong(v) => v.toString
-              case PString(v) => v
+              case PDouble(v)  => v.toString
+              case PFloat(v)   => v.toString
+              case PInt(v)     => v.toString
+              case PLong(v)    => v.toString
+              case PString(v)  => v
               case v =>
                 throw new JsonFormatException(s"Unexpected value for key: $v")
             }
