@@ -9,22 +9,36 @@ object OldRepeatablesProto extends _root_.scalapb.GeneratedFileObject {
   lazy val dependencies: Seq[_root_.scalapb.GeneratedFileObject] = Seq(
     com.google.protobuf.wrappers.WrappersProto
   )
-  lazy val messagesCompanions: Seq[_root_.scalapb.GeneratedMessageCompanion[_ <: _root_.scalapb.GeneratedMessage]] =
-    Seq[_root_.scalapb.GeneratedMessageCompanion[_ <: _root_.scalapb.GeneratedMessage]](
+  lazy val messagesCompanions: Seq[_root_.scalapb.GeneratedMessageCompanion[
+    _ <: _root_.scalapb.GeneratedMessage
+  ]] =
+    Seq[_root_.scalapb.GeneratedMessageCompanion[
+      _ <: _root_.scalapb.GeneratedMessage
+    ]](
       generated.oldRepeatables.OldRepeatablesTest
     )
   private lazy val ProtoBytes: _root_.scala.Array[Byte] =
-      scalapb.Encoding.fromBase64(scala.collection.immutable.Seq(
-  """ChRvbGRSZXBlYXRhYmxlcy5wcm90bxIJZ2VuZXJhdGVkGh5nb29nbGUvcHJvdG9idWYvd3JhcHBlcnMucHJvdG8icgoST2xkU
+    scalapb.Encoding.fromBase64(
+      scala.collection.immutable
+        .Seq(
+          """ChRvbGRSZXBlYXRhYmxlcy5wcm90bxIJZ2VuZXJhdGVkGh5nb29nbGUvcHJvdG9idWYvd3JhcHBlcnMucHJvdG8icgoST2xkU
   mVwZWF0YWJsZXNUZXN0ElwKD3JlcGVhdGVkU3RyaW5ncxgBIAMoCzIcLmdvb2dsZS5wcm90b2J1Zi5TdHJpbmdWYWx1ZUIU4j8RE
   g9yZXBlYXRlZFN0cmluZ3NSD3JlcGVhdGVkU3RyaW5nc2IGcHJvdG8z"""
-      ).mkString)
+        )
+        .mkString
+    )
   lazy val scalaDescriptor: _root_.scalapb.descriptors.FileDescriptor = {
-    val scalaProto = com.google.protobuf.descriptor.FileDescriptorProto.parseFrom(ProtoBytes)
-    _root_.scalapb.descriptors.FileDescriptor.buildFrom(scalaProto, dependencies.map(_.scalaDescriptor))
+    val scalaProto =
+      com.google.protobuf.descriptor.FileDescriptorProto.parseFrom(ProtoBytes)
+    _root_.scalapb.descriptors.FileDescriptor
+      .buildFrom(scalaProto, dependencies.map(_.scalaDescriptor))
   }
   lazy val javaDescriptor: com.google.protobuf.Descriptors.FileDescriptor =
     generated.OldRepeatables.getDescriptor()
-  @deprecated("Use javaDescriptor instead. In a future version this will refer to scalaDescriptor.", "ScalaPB 0.5.47")
-  def descriptor: com.google.protobuf.Descriptors.FileDescriptor = javaDescriptor
+  @deprecated(
+    "Use javaDescriptor instead. In a future version this will refer to scalaDescriptor.",
+    "ScalaPB 0.5.47"
+  )
+  def descriptor: com.google.protobuf.Descriptors.FileDescriptor =
+    javaDescriptor
 }
