@@ -297,6 +297,8 @@ class Printer private (config: Printer.PrinterConfig) {
         }
       case xs: Iterable[GeneratedMessage] @unchecked =>
         serializeIterable(xs)
+      case array: Array[GeneratedMessage] =>
+        serializeIterable(array)
       case msg: GeneratedMessage =>
         b += JField(name, toJson(msg))
       case v =>
