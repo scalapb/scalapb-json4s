@@ -44,8 +44,8 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "3.2.7" % "test",
   "org.scalatestplus" %% "scalacheck-1-15" % "3.2.7.0" % "test",
   "org.scala-lang.modules" %% "scala-collection-compat" % "2.4.3",
-  "com.google.protobuf" % "protobuf-java-util" % "3.15.7" % "test",
-  "com.google.protobuf" % "protobuf-java" % "3.15.7" % "protobuf"
+  "com.google.protobuf" % "protobuf-java-util" % "3.15.8" % "test",
+  "com.google.protobuf" % "protobuf-java" % "3.15.8" % "protobuf"
 )
 
 lazy val root = (project in file("."))
