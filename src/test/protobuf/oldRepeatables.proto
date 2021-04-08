@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package jsontest;
+
+import "scalapb/scalapb.proto";
+
+option (scalapb.options) = {
+  collection_type: "scala.collection.immutable.Seq"
+};
+
+import "google/protobuf/wrappers.proto";
+
+message OldRepeatablesTest {
+  repeated google.protobuf.StringValue strings = 1;
+}
