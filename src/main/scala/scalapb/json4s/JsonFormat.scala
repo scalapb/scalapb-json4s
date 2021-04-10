@@ -1,25 +1,23 @@
 package scalapb.json4s
 
+import _root_.scalapb.descriptors._
 import com.fasterxml.jackson.core.Base64Variants
 import com.google.protobuf.ByteString
 import com.google.protobuf.descriptor.FieldDescriptorProto
+import com.google.protobuf.descriptor.FieldDescriptorProto.Type
 import com.google.protobuf.duration.Duration
+import com.google.protobuf.field_mask.FieldMask
 import com.google.protobuf.struct.NullValue
 import com.google.protobuf.timestamp.Timestamp
-import scalapb.json4s.JsonFormat.GenericCompanion
-import scalapb._
 import org.json4s.JsonAST._
 import org.json4s.{Reader, Writer}
+import scalapb._
+import scalapb.json4s.JsonFormat.GenericCompanion
 
-import scala.collection.mutable
 import scala.collection.concurrent.TrieMap
+import scala.collection.mutable
 import scala.language.existentials
 import scala.reflect.ClassTag
-import _root_.scalapb.descriptors._
-import com.google.protobuf.descriptor.FieldDescriptorProto.Type
-import com.google.protobuf.field_mask.FieldMask
-
-import scala.util.Try
 
 case class JsonFormatException(msg: String, cause: Exception)
     extends Exception(msg, cause) {
@@ -298,45 +296,53 @@ class Printer private (config: Printer.PrinterConfig) {
           )
         }
       case xs: Iterable[GeneratedMessage] @unchecked =>
-        if (fd.isMapField && !config.isFormattingMapEntriesAsKeyValuePairs) {
-          val mapEntryDescriptor =
-            fd.scalaType.asInstanceOf[ScalaType.Message].descriptor
-          val keyDescriptor = mapEntryDescriptor.findFieldByNumber(1).get
-          val valueDescriptor = mapEntryDescriptor.findFieldByNumber(2).get
-          b += JField(
-            name,
-            JObject(xs.map { x =>
-              val key = x.getField(keyDescriptor) match {
-                case PBoolean(v) => v.toString
-                case PDouble(v)  => v.toString
-                case PFloat(v)   => v.toString
-                case PInt(v)     => v.toString
-                case PLong(v)    => v.toString
-                case PString(v)  => v
-                case v =>
-                  throw new JsonFormatException(s"Unexpected value for key: $v")
-              }
-              val value = if (valueDescriptor.protoType.isTypeMessage) {
-                toJson(
-                  x.getFieldByNumber(valueDescriptor.number)
-                    .asInstanceOf[GeneratedMessage]
-                )
-              } else {
-                serializeSingleValue(
-                  valueDescriptor,
-                  x.getField(valueDescriptor)
-                )
-              }
-              key -> value
-            }.toSeq: _*)
-          )
-        } else {
-          b += JField(name, JArray(xs.map(toJson).toList))
-        }
+        serializeIterable(xs)
+      // In early versions of ScalaPB 0.10.x, using a custom collection of type immutable.Seq
+      // would result in an array type here leading to an exception without this case.
+      // This case is not needed for ScalaPB 0.10.11 and 0.11.0. [https://github.com/scalapb/ScalaPB/issues/1121]
+      case array: Array[GeneratedMessage] =>
+        serializeIterable(array)
       case msg: GeneratedMessage =>
         b += JField(name, toJson(msg))
       case v =>
         throw new JsonFormatException(v.toString)
+    }
+    def serializeIterable(xs: Iterable[GeneratedMessage]) = {
+      if (fd.isMapField && !config.isFormattingMapEntriesAsKeyValuePairs) {
+        val mapEntryDescriptor =
+          fd.scalaType.asInstanceOf[ScalaType.Message].descriptor
+        val keyDescriptor = mapEntryDescriptor.findFieldByNumber(1).get
+        val valueDescriptor = mapEntryDescriptor.findFieldByNumber(2).get
+        b += JField(
+          name,
+          JObject(xs.map { x =>
+            val key = x.getField(keyDescriptor) match {
+              case PBoolean(v) => v.toString
+              case PDouble(v)  => v.toString
+              case PFloat(v)   => v.toString
+              case PInt(v)     => v.toString
+              case PLong(v)    => v.toString
+              case PString(v)  => v
+              case v =>
+                throw new JsonFormatException(s"Unexpected value for key: $v")
+            }
+            val value = if (valueDescriptor.protoType.isTypeMessage) {
+              toJson(
+                x.getFieldByNumber(valueDescriptor.number)
+                  .asInstanceOf[GeneratedMessage]
+              )
+            } else {
+              serializeSingleValue(
+                valueDescriptor,
+                x.getField(valueDescriptor)
+              )
+            }
+            key -> value
+          }.toSeq: _*)
+        )
+      } else {
+        b += JField(name, JArray(xs.map(toJson).toList))
+      }
     }
   }
 
