@@ -461,6 +461,7 @@ class Printer private (config: Printer.PrinterConfig) {
 object Parser {
   private final case class ParserConfig(
       isIgnoringUnknownFields: Boolean,
+      failOnOverlappingOneofKeys: Boolean,
       mapEntriesAsKeyValuePairs: Boolean,
       formatRegistry: FormatRegistry,
       typeRegistry: TypeRegistry
@@ -472,6 +473,7 @@ class Parser private (config: Parser.ParserConfig) {
     this(
       Parser.ParserConfig(
         isIgnoringUnknownFields = false,
+        failOnOverlappingOneofKeys = false,
         mapEntriesAsKeyValuePairs = false,
         JsonFormat.DefaultRegistry,
         TypeRegistry.empty
@@ -490,6 +492,7 @@ class Parser private (config: Parser.ParserConfig) {
     this(
       Parser.ParserConfig(
         isIgnoringUnknownFields = false,
+        failOnOverlappingOneofKeys = false,
         mapEntriesAsKeyValuePairs = false,
         formatRegistry,
         typeRegistry
@@ -498,6 +501,9 @@ class Parser private (config: Parser.ParserConfig) {
 
   def ignoringUnknownFields: Parser =
     new Parser(config.copy(isIgnoringUnknownFields = true))
+
+  def failOnOverlappingOneofKeys: Parser =
+    new Parser(config.copy(failOnOverlappingOneofKeys = true))
 
   def mapEntriesAsKeyValuePairs: Parser =
     new Parser(config.copy(mapEntriesAsKeyValuePairs = true))
@@ -527,7 +533,24 @@ class Parser private (config: Parser.ParserConfig) {
       value: JValue,
       skipTypeUrl: Boolean
   )(implicit cmp: GeneratedMessageCompanion[A]): A = {
-    cmp.messageReads.read(fromJsonToPMessage(cmp, value, skipTypeUrl))
+    val message = fromJsonToPMessage(cmp, value, skipTypeUrl)
+    if (config.failOnOverlappingOneofKeys) {
+      validateOneofs(message)
+    }
+    cmp.messageReads.read(message)
+  }
+
+  private def validateOneofs[A <: GeneratedMessage](message: PMessage) = {
+    message.value.keys
+      .groupBy(_.containingOneof)
+      .filter(x => x._1.isDefined && x._2.size > 1)
+      .values
+      .headOption
+      .foreach(keys =>
+        throw new JsonFormatException(
+          s"Overlapping keys in oneof: ${keys.map(_.name).mkString(", ")}"
+        )
+      )
   }
 
   private def fromJsonToPMessage(
