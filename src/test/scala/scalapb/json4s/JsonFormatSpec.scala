@@ -675,14 +675,15 @@ class JsonFormatSpec
     JsonFormat.parser.fromJsonString[TestAllTypes](javaJson) must be(obj)
   }
 
-  "oneofs" should "fail for overlapping keys if failOnOverlappingOneofKeys" in new StrictOneofParserContext {
+  "oneofs" should "fail for overlapping keys if failOnOverlappingOneofKeys" in new DefaultParserContext {
     val extraKey = """{"primitive": "", "wrapper": ""}"""
     assertFails(extraKey, OneOf)
   }
 
-  "oneofs" should "not fail for overlapping keys if failOnOverlappingOneofKeys with a scala parser" in new DefaultParserContext {
+  "oneofs" should "not fail for overlapping keys if ignoreOverlappingOneofKeys" in {
     val extraKey = """{"primitive": "", "wrapper": ""}"""
-    val parsedScala = pc.scalaParser.fromJsonString[OneOf](extraKey)(OneOf)
+    val scalaParser = new Parser().ignoringOverlappingOneofFields
+    val parsedScala = scalaParser.fromJsonString[OneOf](extraKey)(OneOf)
     parsedScala must be(
       OneOf(field = OneOf.Field.Primitive(""))
     )

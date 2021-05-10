@@ -31,13 +31,6 @@ class IgnoringUnknownParserContext {
   )
 }
 
-class StrictOneofParserContext {
-  implicit val pc: ParserContext = ParserContext(
-    new Parser().failOnOverlappingOneofKeys,
-    JavaJsonFormat.parser // by default the java parser fails on overlapping keys
-  )
-}
-
 trait JavaAssertions {
   self: AnyFlatSpec with Matchers =>
 
