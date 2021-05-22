@@ -2,6 +2,7 @@ package scalapb.json4s
 
 import com.google.protobuf.any.{Any => PBAny}
 import org.json4s.JsonAST.{JNothing, JObject, JString, JValue}
+import org.json4s.MonadicJValue._
 
 import scala.language.existentials
 

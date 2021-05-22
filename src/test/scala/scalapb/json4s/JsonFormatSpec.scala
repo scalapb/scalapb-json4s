@@ -13,6 +13,7 @@ import jsontest.test3._
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
 import org.json4s.{JDecimal, JDouble, JValue}
+import org.json4s.MonadicJValue._
 import org.scalatest.{Assertion, OptionValues}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.must.Matchers

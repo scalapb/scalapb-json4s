@@ -3,7 +3,7 @@ import scalapb.compiler.Version.scalapbVersion
 
 scalaVersion := "2.13.6"
 
-crossScalaVersions := Seq("2.12.14", "2.13.6")
+crossScalaVersions := Seq("2.12.14", "2.13.6", "3.0.1")
 
 ThisBuild / organization := "com.thesamet.scalapb"
 
@@ -42,10 +42,9 @@ libraryDependencies ++= Seq(
   "com.thesamet.scalapb" %% "scalapb-runtime" % scalapbVersion % "protobuf,test",
   "org.scalatest" %% "scalatest" % "3.2.9" % "test",
   "org.scalatestplus" %% "scalacheck-1-15" % "3.2.9.0" % "test",
-  "org.scala-lang.modules" %% "scala-collection-compat" % "2.5.0",
   "com.google.protobuf" % "protobuf-java-util" % "3.17.3" % "test",
   "com.google.protobuf" % "protobuf-java" % "3.17.3" % "protobuf",
-  "org.json4s" %% "json4s-jackson" % "3.6.11"
+  "org.json4s" %% "json4s-jackson-core" % "4.0.1"
 )
 
 lazy val root = (project in file("."))
@@ -56,9 +55,10 @@ lazy val root = (project in file("."))
     Test / PB.targets := Seq(
       PB.gens.java -> (Test / sourceManaged).value,
       scalapb.gen(javaConversions = true) -> (Test / sourceManaged).value
-    )
+    ),
+    compileOrder := CompileOrder.JavaThenScala
   )
 
 mimaPreviousArtifacts := Set(
-  "com.thesamet.scalapb" %% "scalapb-json4s" % "0.10.0"
+  "com.thesamet.scalapb" %% "scalapb-json4s" % "0.11.0"
 )

@@ -9,7 +9,7 @@ import com.google.protobuf.timestamp.Timestamp
 import scalapb.json4s.JsonFormat.GenericCompanion
 import scalapb._
 import org.json4s.JsonAST._
-import org.json4s.{Reader, Writer}
+import org.json4s.{Reader, Writer, MappingException}
 
 import scala.collection.mutable
 import scala.collection.concurrent.TrieMap
@@ -21,8 +21,8 @@ import com.google.protobuf.field_mask.FieldMask
 
 import scala.util.Try
 
-case class JsonFormatException(msg: String, cause: Exception)
-    extends Exception(msg, cause) {
+class JsonFormatException(msg: String, cause: Exception)
+    extends MappingException(msg, cause) {
   def this(msg: String) = this(msg, null)
 }
 
@@ -720,9 +720,8 @@ class Parser private (config: Parser.ParserConfig) {
 object JsonFormat {
   import com.google.protobuf.wrappers
 
-  type GenericCompanion = GeneratedMessageCompanion[T] forSome {
-    type T <: GeneratedMessage
-  }
+  // type GenericCompanion = GeneratedMessageCompanion[T] forSome { type T <: GeneratedMessage}
+  type GenericCompanion = GeneratedMessageCompanion[_ <: GeneratedMessage]
 
   val DefaultRegistry = FormatRegistry()
     .registerWriter(
@@ -850,8 +849,13 @@ object JsonFormat {
 
   def fromJson[A <: GeneratedMessage: GeneratedMessageCompanion](
       value: JValue
-  ): A = {
-    parser.fromJson(value)
+  ): A = parser.fromJson(value)
+
+  def fromJsonEither[A <: GeneratedMessage: GeneratedMessageCompanion](
+      value: JValue
+  ): Either[MappingException, A] = try { Right(parser.fromJson(value)) }
+  catch {
+    case e: JsonFormatException => Left(new MappingException("fail", e))
   }
 
   def fromJsonString[A <: GeneratedMessage: GeneratedMessageCompanion](
@@ -861,10 +865,7 @@ object JsonFormat {
   }
 
   implicit def protoToReader[T <: GeneratedMessage: GeneratedMessageCompanion]
-      : Reader[T] =
-    new Reader[T] {
-      def read(value: JValue): T = parser.fromJson(value)
-    }
+      : Reader[T] = Reader.from(fromJsonEither(_))
 
   implicit def protoToWriter[T <: GeneratedMessage]: Writer[T] =
     new Writer[T] {
@@ -979,7 +980,7 @@ object JsonFormat {
       BigDecimal(value)
     } catch {
       case e: Exception =>
-        throw JsonFormatException(s"Not a numeric value: $value", e)
+        throw new JsonFormatException(s"Not a numeric value: $value", e)
     }
   }
 
@@ -992,7 +993,7 @@ object JsonFormat {
           PInt(parseBigDecimal(value).toIntExact)
         } catch {
           case e: Exception =>
-            throw JsonFormatException(s"Not an int32 value: $value", e)
+            throw new JsonFormatException(s"Not an int32 value: $value", e)
         }
     }
   }
@@ -1007,7 +1008,7 @@ object JsonFormat {
           PLong(bd.toLongExact)
         } catch {
           case e: Exception =>
-            throw JsonFormatException(s"Not an int64 value: $value", e)
+            throw new JsonFormatException(s"Not an int64 value: $value", e)
         }
     }
   }
