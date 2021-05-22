@@ -7,6 +7,7 @@ import com.google.protobuf.any.{Any => PBAny}
 import com.google.protobuf.util.JsonFormat.{TypeRegistry => JavaTypeRegistry}
 import com.google.protobuf.util.{JsonFormat => JavaJsonFormat}
 import jsontest.custom_collection.{Guitar, Studio}
+import jsontest.oneof.OneOf
 import jsontest.test._
 import jsontest.test3._
 import org.json4s.JsonDSL._
@@ -672,6 +673,20 @@ class JsonFormatSpec
     scalaJson must be(parse(javaJson, useBigDecimalForDouble = true))
 
     JsonFormat.parser.fromJsonString[TestAllTypes](javaJson) must be(obj)
+  }
+
+  "oneofs" should "fail for overlapping keys if failOnOverlappingOneofKeys" in new DefaultParserContext {
+    val extraKey = """{"primitive": "", "wrapper": ""}"""
+    assertFails(extraKey, OneOf)
+  }
+
+  "oneofs" should "not fail for overlapping keys if ignoreOverlappingOneofKeys" in {
+    val extraKey = """{"primitive": "", "wrapper": ""}"""
+    val scalaParser = new Parser().ignoringOverlappingOneofFields
+    val parsedScala = scalaParser.fromJsonString[OneOf](extraKey)(OneOf)
+    parsedScala must be(
+      OneOf(field = OneOf.Field.Primitive(""))
+    )
   }
 
   "TestProto" should "be TestJsonWithMapEntriesAsKeyValuePairs when converted to Proto with mapEntriesAsKeyValuePairs setting" in {

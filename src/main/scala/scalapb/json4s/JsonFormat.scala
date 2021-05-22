@@ -461,6 +461,7 @@ class Printer private (config: Printer.PrinterConfig) {
 object Parser {
   private final case class ParserConfig(
       isIgnoringUnknownFields: Boolean,
+      isIgnoringOverlappingOneofFields: Boolean,
       mapEntriesAsKeyValuePairs: Boolean,
       formatRegistry: FormatRegistry,
       typeRegistry: TypeRegistry
@@ -472,6 +473,7 @@ class Parser private (config: Parser.ParserConfig) {
     this(
       Parser.ParserConfig(
         isIgnoringUnknownFields = false,
+        isIgnoringOverlappingOneofFields = false,
         mapEntriesAsKeyValuePairs = false,
         JsonFormat.DefaultRegistry,
         TypeRegistry.empty
@@ -490,6 +492,7 @@ class Parser private (config: Parser.ParserConfig) {
     this(
       Parser.ParserConfig(
         isIgnoringUnknownFields = false,
+        isIgnoringOverlappingOneofFields = false,
         mapEntriesAsKeyValuePairs = false,
         formatRegistry,
         typeRegistry
@@ -498,6 +501,9 @@ class Parser private (config: Parser.ParserConfig) {
 
   def ignoringUnknownFields: Parser =
     new Parser(config.copy(isIgnoringUnknownFields = true))
+
+  def ignoringOverlappingOneofFields: Parser =
+    new Parser(config.copy(isIgnoringOverlappingOneofFields = true))
 
   def mapEntriesAsKeyValuePairs: Parser =
     new Parser(config.copy(mapEntriesAsKeyValuePairs = true))
@@ -593,12 +599,23 @@ class Parser private (config: Parser.ParserConfig) {
       case None =>
         value match {
           case JObject(fields) =>
+            val usedOneofs = mutable.Set[OneofDescriptor]()
             val fieldMap = JsonFormat.MemorizedFieldNameMap(cmp.scalaDescriptor)
             val valueMapBuilder = Map.newBuilder[FieldDescriptor, PValue]
             fields.foreach { case (name: String, jValue: JValue) =>
               if (fieldMap.contains(name)) {
                 if (jValue != JNull) {
                   val fd = fieldMap(name)
+                  fd.containingOneof.foreach(o =>
+                    if (
+                      !config.isIgnoringOverlappingOneofFields && !usedOneofs
+                        .add(o)
+                    ) {
+                      throw new JsonFormatException(
+                        s"Overlapping field '${name}' in oneof"
+                      )
+                    }
+                  )
                   valueMapBuilder += (fd -> parseValue(fd, jValue))
                 }
               } else if (
