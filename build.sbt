@@ -3,7 +3,7 @@ import scalapb.compiler.Version.scalapbVersion
 
 scalaVersion := "2.13.6"
 
-crossScalaVersions := Seq("2.12.13", "2.13.6", "3.0.0")
+crossScalaVersions := Seq("2.12.13", "2.13.6")
 
 ThisBuild / organization := "com.thesamet.scalapb"
 
@@ -45,7 +45,7 @@ libraryDependencies ++= Seq(
   "org.scala-lang.modules" %% "scala-collection-compat" % "2.4.4",
   "com.google.protobuf" % "protobuf-java-util" % "3.17.0" % "test",
   "com.google.protobuf" % "protobuf-java" % "3.17.0" % "protobuf",
-  "org.json4s" %% "json4s-jackson" % "3.7.0-M16",
+  "org.json4s" %% "json4s-jackson" % "3.6.11"
 )
 
 lazy val root = (project in file("."))
