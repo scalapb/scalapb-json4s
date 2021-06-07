@@ -698,7 +698,7 @@ class Parser private (config: Parser.ParserConfig) {
             case None         => defaultEnumParser(ed, value)
           }
 
-        res.fold[PValue](PEmpty)(PEnum)
+        res.fold[PValue](PEmpty)(PEnum.apply)
       }
       case ScalaType.Message(md) =>
         fromJsonToPMessage(
