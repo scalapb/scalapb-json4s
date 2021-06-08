@@ -43,8 +43,8 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "3.2.9" % "test",
   "org.scalatestplus" %% "scalacheck-1-15" % "3.2.9.0" % "test",
   "org.scala-lang.modules" %% "scala-collection-compat" % "2.4.4",
-  "com.google.protobuf" % "protobuf-java-util" % "3.17.2" % "test",
-  "com.google.protobuf" % "protobuf-java" % "3.17.2" % "protobuf",
+  "com.google.protobuf" % "protobuf-java-util" % "3.17.3" % "test",
+  "com.google.protobuf" % "protobuf-java" % "3.17.3" % "protobuf",
   "org.json4s" %% "json4s-jackson" % "3.6.11"
 )
 
