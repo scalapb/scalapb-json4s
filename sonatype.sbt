@@ -8,11 +8,6 @@ pomExtra in Global := {
       <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
     </license>
   </licenses>
-  <scm>
-    <connection>scm:git:github.com:scalapb/scalapb-json4s.git</connection>
-    <developerConnection>scm:git:git@github.com:scalapb/scalapb-json4s.git</developerConnection>
-    <url>github.com/scalapb/scalapb-json4s</url>
-  </scm>
   <developers>
     <developer>
       <id>thesamet</id>
