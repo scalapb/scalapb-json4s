@@ -1,4 +1,3 @@
-import ReleaseTransformations._
 import scalapb.compiler.Version.scalapbVersion
 
 scalaVersion := "2.13.6"
@@ -16,26 +15,7 @@ ThisBuild / scalacOptions ++= Seq("-deprecation") ++ {
   }
 }
 
-releaseCrossBuild := true
-
 ThisBuild / publishTo := sonatypePublishToBundle.value
-
-releasePublishArtifactsAction := PgpKeys.publishSigned.value
-
-releaseProcess := Seq[ReleaseStep](
-  checkSnapshotDependencies,
-  inquireVersions,
-  runClean,
-  runTest,
-  setReleaseVersion,
-  commitReleaseVersion,
-  tagRelease,
-  releaseStepCommandAndRemaining("+publishSigned"),
-  releaseStepCommand(s"sonatypeBundleRelease"),
-  setNextVersion,
-  commitNextVersion,
-  pushChanges
-)
 
 libraryDependencies ++= Seq(
   "com.thesamet.scalapb" %% "scalapb-runtime" % scalapbVersion,
