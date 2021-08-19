@@ -146,9 +146,11 @@ case class FormatRegistry(
   }
 }
 
-/** TypeRegistry is used to map the @type field in Any messages to a ScalaPB generated message.
+/** TypeRegistry is used to map the @type field in Any messages to a ScalaPB
+  * generated message.
   *
-  * TypeRegistries are added to Printers and Parsers to enable printing and parsing of Any messages.
+  * TypeRegistries are added to Printers and Parsers to enable printing and
+  * parsing of Any messages.
   */
 case class TypeRegistry(
     companions: Map[String, GenericCompanion] = Map.empty,
@@ -444,8 +446,8 @@ class Printer private (config: Printer.PrinterConfig) {
       case PInt(v) if fd.protoType.isTypeUint32  => JInt(unsignedInt(v))
       case PInt(v) if fd.protoType.isTypeFixed32 => JInt(unsignedInt(v))
       case PInt(v)                               => JInt(v)
-      case PLong(v)                              => formatLong(v, fd.protoType, formattingLongAsNumber)
-      case PDouble(v)                            => JDouble(v)
+      case PLong(v)   => formatLong(v, fd.protoType, formattingLongAsNumber)
+      case PDouble(v) => JDouble(v)
       case PFloat(v) =>
         if (!v.isNaN && !v.isInfinite) JDecimal(BigDecimal.decimal(v))
         else JDouble(v)
@@ -729,7 +731,7 @@ object JsonFormat {
       jv =>
         jv match {
           case JString(str) => Durations.parseDuration(str)
-          case _            => throw new JsonFormatException("Expected a string.")
+          case _ => throw new JsonFormatException("Expected a string.")
         }
     )
     .registerWriter(
@@ -737,7 +739,7 @@ object JsonFormat {
       jv =>
         jv match {
           case JString(str) => Timestamps.parseTimestamp(str)
-          case _            => throw new JsonFormatException("Expected a string.")
+          case _ => throw new JsonFormatException("Expected a string.")
         }
     )
     .registerWriter(
@@ -745,7 +747,7 @@ object JsonFormat {
       jv =>
         jv match {
           case JString(str) => FieldMaskUtil.fromJsonString(str)
-          case _            => throw new JsonFormatException("Expected a string.")
+          case _ => throw new JsonFormatException("Expected a string.")
         }
     )
     .registerMessageFormatter[wrappers.DoubleValue](
@@ -789,7 +791,7 @@ object JsonFormat {
       (parser, value) =>
         value match {
           case JNull => Some(NullValue.NULL_VALUE.scalaValueDescriptor)
-          case _     => parser.defaultEnumParser(NullValue.scalaDescriptor, value)
+          case _ => parser.defaultEnumParser(NullValue.scalaDescriptor, value)
         }
     )
     .registerWriter[com.google.protobuf.struct.Value](
@@ -1092,7 +1094,9 @@ object JsonFormat {
       .getOrElse(NameUtils.snakeCaseToCamelCase(fd.asProto.getName))
   }
 
-  /** Given a message descriptor, provides a map from field names to field descriptors. */
+  /** Given a message descriptor, provides a map from field names to field
+    * descriptors.
+    */
   private[json4s] object MemorizedFieldNameMap {
     private[this] val fieldNameMap
         : TrieMap[Descriptor, Map[String, FieldDescriptor]] =
