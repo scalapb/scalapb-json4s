@@ -357,6 +357,10 @@ class JsonFormatSpec
       s"""{"uint":"$uint32max"}""",
       IntFields(uint = Some(uint32max.toInt))
     )
+    validateAccepts(
+      s"""{"uint":"$uint32max.0"}""",
+      IntFields(uint = Some(uint32max.toInt))
+    )
     validateRejects(s"""{"uint":"${uint32max + 1}"}""")
     validateRejects("""{"uint":"-1"}""")
 
@@ -364,6 +368,10 @@ class JsonFormatSpec
     val uint64max: BigInt = (BigInt(1) << 64) - 1
     validateAccepts(
       s"""{"ulong":"$uint64max"}""",
+      IntFields(ulong = Some(uint64max.toLong))
+    )
+    validateAccepts(
+      s"""{"ulong":"$uint64max.0"}""",
       IntFields(ulong = Some(uint64max.toLong))
     )
     validateRejects(s"""{"ulong":"${uint64max + 1}"}""")

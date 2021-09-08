@@ -1028,7 +1028,7 @@ object JsonFormat {
     parseBigDecimal(value).toBigIntExact.map { intVal =>
       if (intVal < 0 || intVal > 0xffffffffL)
         throw new JsonFormatException(s"Out of range uint32 value: $value")
-      PLong(intVal.intValue)
+      PInt(intVal.intValue)
     } getOrElse {
       throw new JsonFormatException(s"Not an uint32 value: $value")
     }
