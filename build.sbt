@@ -22,8 +22,8 @@ libraryDependencies ++= Seq(
   "com.thesamet.scalapb" %% "scalapb-runtime" % scalapbVersion % "protobuf,test",
   "org.scalatest" %% "scalatest" % "3.2.9" % "test",
   "org.scalatestplus" %% "scalacheck-1-15" % "3.2.9.0" % "test",
-  "com.google.protobuf" % "protobuf-java-util" % "3.17.3" % "test",
-  "com.google.protobuf" % "protobuf-java" % "3.17.3" % "protobuf",
+  "com.google.protobuf" % "protobuf-java-util" % "3.18.0" % "test",
+  "com.google.protobuf" % "protobuf-java" % "3.18.0" % "protobuf",
   "org.json4s" %% "json4s-jackson-core" % "4.0.3"
 )
 
