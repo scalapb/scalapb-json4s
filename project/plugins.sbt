@@ -1,7 +1,7 @@
 addSbtPlugin("com.github.sbt" % "sbt-pgp" % "2.1.2")
 
 addSbtPlugin("com.thesamet" % "sbt-protoc" % "1.0.6")
-libraryDependencies += "com.thesamet.scalapb" %% "compilerplugin" % "0.11.7"
+libraryDependencies += "com.thesamet.scalapb" %% "compilerplugin" % "0.11.8"
 
 addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "1.0.1")
 
