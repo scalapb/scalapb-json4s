@@ -603,6 +603,29 @@ class JsonFormatSpec
     assertRejects("optionalDouble", (minDouble.multiply(moreThanOne).toString))
   }
 
+  "parser" should "parse numeric boolean values when enabled" in {
+    val parser = new Parser().allowNumericBooleanValues
+    def validateRejects(json: String): Assertion = {
+      a[JsonFormatException] mustBe thrownBy {
+        parser.fromJsonString[MyTest](json)
+      }
+    }
+
+    parser.fromJsonString[MyTest]("""{"optBool":1}""") must be(
+      MyTest(optBool = Some(true))
+    )
+    parser.fromJsonString[MyTest]("""{"optBool":0}""") must be(
+      MyTest(optBool = Some(false))
+    )
+
+    // Only 0 and 1 as integers should be parsed
+    validateRejects("""{"optBool":2}""")
+    validateRejects("""{"optBool":-1}""")
+    validateRejects("""{"optBool":"0"}""")
+    validateRejects("""{"optBool":"1"}""")
+  }
+
+
   val anyEnabledJavaTypeRegistry = JavaTypeRegistry
     .newBuilder()
     .add(TestProto.companion.javaDescriptor)
