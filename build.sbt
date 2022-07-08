@@ -2,7 +2,7 @@ import scalapb.compiler.Version.scalapbVersion
 
 scalaVersion := "2.13.8"
 
-crossScalaVersions := Seq("2.12.15", "2.13.8", "3.1.2")
+crossScalaVersions := Seq("2.12.16", "2.13.8", "3.1.2")
 
 ThisBuild / organization := "com.thesamet.scalapb"
 
@@ -22,8 +22,8 @@ libraryDependencies ++= Seq(
   "com.thesamet.scalapb" %% "scalapb-runtime" % scalapbVersion % "protobuf,test",
   "org.scalatest" %% "scalatest" % "3.2.12" % "test",
   "org.scalatestplus" %% "scalacheck-1-15" % "3.2.11.0" % "test",
-  "com.google.protobuf" % "protobuf-java-util" % "3.20.1" % "test",
-  "com.google.protobuf" % "protobuf-java" % "3.20.1" % "protobuf",
+  "com.google.protobuf" % "protobuf-java-util" % "3.21.2" % "test",
+  "com.google.protobuf" % "protobuf-java" % "3.21.2" % "protobuf",
   "org.json4s" %% "json4s-jackson-core" % "4.0.5"
 )
 
