@@ -1,8 +1,8 @@
 import scalapb.compiler.Version.scalapbVersion
 
-scalaVersion := "2.13.8"
+scalaVersion := "2.13.10"
 
-crossScalaVersions := Seq("2.12.16", "2.13.8", "3.2.0")
+crossScalaVersions := Seq("2.12.16", "2.13.10", "3.2.0")
 
 ThisBuild / organization := "com.thesamet.scalapb"
 
@@ -20,10 +20,10 @@ ThisBuild / publishTo := sonatypePublishToBundle.value
 libraryDependencies ++= Seq(
   "com.thesamet.scalapb" %% "scalapb-runtime" % scalapbVersion,
   "com.thesamet.scalapb" %% "scalapb-runtime" % scalapbVersion % "protobuf,test",
-  "org.scalatest" %% "scalatest" % "3.2.13" % "test",
+  "org.scalatest" %% "scalatest" % "3.2.14" % "test",
   "org.scalatestplus" %% "scalacheck-1-15" % "3.2.11.0" % "test",
-  "com.google.protobuf" % "protobuf-java-util" % "3.21.5" % "test",
-  "com.google.protobuf" % "protobuf-java" % "3.21.5" % "protobuf",
+  "com.google.protobuf" % "protobuf-java-util" % "3.21.8" % "test",
+  "com.google.protobuf" % "protobuf-java" % "3.21.8" % "protobuf",
   "org.json4s" %% "json4s-jackson-core" % "4.0.5"
 )
 
