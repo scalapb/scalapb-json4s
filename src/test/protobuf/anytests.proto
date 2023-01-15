@@ -3,6 +3,7 @@ syntax = "proto3";
 package jsontest;
 
 import "google/protobuf/any.proto";
+import "google/protobuf/struct.proto";
 
 message AnyTest {
     string field = 1;
@@ -10,4 +11,8 @@ message AnyTest {
 
 message ManyAnyTest {
     repeated google.protobuf.Any fields = 1;
+}
+
+message AnyContainer {
+    google.protobuf.Any optionalAny = 1;
 }

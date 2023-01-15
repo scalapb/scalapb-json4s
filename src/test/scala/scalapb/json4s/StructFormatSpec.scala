@@ -1,7 +1,7 @@
 package scalapb.json4s
 
 import com.google.protobuf.struct._
-import jsontest.test3.StructTest
+import jsontest.test3.{StructTest, ValueTest}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.must.Matchers
 
@@ -86,6 +86,10 @@ class StructFormatSpec extends AnyFlatSpec with Matchers with JavaAssertions {
         )
       )
     )
+  }
+
+  "Value" should "accept null" in new DefaultParserContext {
+    assertParse("""{"v": null}""", ValueTest().withV(Value().withNullValue(NullValue.NULL_VALUE)))
   }
 
   "Struct" should "be serialized the same as in Java (and parsed back to original)" in {

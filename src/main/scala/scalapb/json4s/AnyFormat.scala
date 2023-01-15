@@ -7,6 +7,19 @@ import org.json4s.MonadicJValue._
 import scala.language.existentials
 
 object AnyFormat {
+  // Messages that have special representation are parsed/serialized from a `value` field of the
+  // any.
+  private val SpecialValues: Set[scalapb.GeneratedMessageCompanion[_]] = (
+    com.google.protobuf.struct.StructProto.messagesCompanions ++
+      com.google.protobuf.wrappers.WrappersProto.messagesCompanions ++
+      Seq(
+        com.google.protobuf.any.Any,
+        com.google.protobuf.duration.Duration,
+        com.google.protobuf.timestamp.Timestamp,
+        com.google.protobuf.field_mask.FieldMask
+      )
+  ).toSet
+
   val anyWriter: (Printer, PBAny) => JValue = { case (printer, any) =>
     // Find the companion so it can be used to JSON-serialize the message. Perhaps this can be circumvented by
     // including the original GeneratedMessage with the Any (at least in memory).
@@ -22,15 +35,21 @@ object AnyFormat {
     val message = any.unpack(cmp)
 
     // ... and add the @type marker to the resulting JSON
-    printer.toJson(message) match {
-      case JObject(fields) =>
-        JObject(("@type" -> JString(any.typeUrl)) +: fields)
-      case value =>
-        // Safety net, this shouldn't happen
-        throw new IllegalStateException(
-          s"Message of type ${any.typeUrl} emitted non-object JSON: $value"
-        )
-    }
+    if (SpecialValues.contains(cmp))
+      JObject(
+        "@type" -> JString(any.typeUrl),
+        "value" -> printer.toJson(message)
+      )
+    else
+      printer.toJson(message) match {
+        case JObject(fields) =>
+          JObject(("@type" -> JString(any.typeUrl)) +: fields)
+        case value =>
+          // Safety net, this shouldn't happen
+          throw new IllegalStateException(
+            s"Message of type ${any.typeUrl} emitted non-object JSON: $value"
+          )
+      }
   }
 
   val anyParser: (Parser, JValue) => PBAny = {
@@ -44,7 +63,8 @@ object AnyFormat {
                 s"Unknown type ${typeUrl} in Any.  Add a TypeRegistry that supports this type to the Parser."
               )
             )
-          val message = parser.fromJson(obj, true)(cmp)
+          val input = if (SpecialValues.contains(cmp)) obj \ "value" else obj
+          val message = parser.fromJson(input, true)(cmp)
           PBAny(typeUrl = typeUrl, value = message.toByteString)
 
         case JNothing =>

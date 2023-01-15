@@ -198,6 +198,15 @@ object TypeRegistry {
   private val TypePrefix = "type.googleapis.com/"
 
   def empty = TypeRegistry(Map.empty)
+
+  val default = TypeRegistry()
+    .addFile(com.google.protobuf.struct.StructProto)
+    .addFile(com.google.protobuf.wrappers.WrappersProto)
+    .addFile(com.google.protobuf.field_mask.FieldMaskProto)
+    .addMessage(com.google.protobuf.any.Any)
+    .addMessage(com.google.protobuf.timestamp.Timestamp)
+    .addMessage(com.google.protobuf.duration.Duration)
+    .addMessage(com.google.protobuf.empty.Empty)
 }
 
 object Printer {
@@ -219,7 +228,7 @@ object Printer {
       isFormattingEnumsAsNumber = false,
       isFormattingMapEntriesAsKeyValuePairs = false,
       formatRegistry = JsonFormat.DefaultRegistry,
-      typeRegistry = TypeRegistry.empty
+      typeRegistry = TypeRegistry.default
     )
 }
 
@@ -392,13 +401,15 @@ class Printer private (config: Printer.PrinterConfig) {
         val descriptor = m.companion.scalaDescriptor
         b.sizeHint(descriptor.fields.size)
         descriptor.fields.foreach { f =>
-          val name =
-            if (config.isPreservingProtoFieldNames) f.name
-            else JsonFormat.jsonName(f)
-          if (f.protoType.isTypeMessage) {
-            serializeMessageField(f, name, m.getFieldByNumber(f.number), b)
-          } else {
-            serializeNonMessageField(f, name, m.getField(f), b)
+          if (f.asProto.getType != FieldDescriptorProto.Type.TYPE_GROUP) {
+            val name =
+              if (config.isPreservingProtoFieldNames) f.name
+              else JsonFormat.jsonName(f)
+            if (f.protoType.isTypeMessage) {
+              serializeMessageField(f, name, m.getFieldByNumber(f.number), b)
+            } else {
+              serializeNonMessageField(f, name, m.getField(f), b)
+            }
           }
         }
         JObject(b.result())
@@ -440,7 +451,8 @@ class Printer private (config: Printer.PrinterConfig) {
         config.formatRegistry.getEnumWriter(e.containingEnum) match {
           case Some(writer) => writer(this, e)
           case None =>
-            if (config.isFormattingEnumsAsNumber) JInt(e.number)
+            if (config.isFormattingEnumsAsNumber || e.isUnrecognized)
+              JInt(e.number)
             else JString(e.name)
         }
       case PInt(v) if fd.protoType.isTypeUint32  => JInt(unsignedInt(v))
@@ -478,7 +490,7 @@ class Parser private (config: Parser.ParserConfig) {
         isIgnoringOverlappingOneofFields = false,
         mapEntriesAsKeyValuePairs = false,
         JsonFormat.DefaultRegistry,
-        TypeRegistry.empty
+        TypeRegistry.default
       )
     )
 
@@ -536,6 +548,14 @@ class Parser private (config: Parser.ParserConfig) {
       skipTypeUrl: Boolean
   )(implicit cmp: GeneratedMessageCompanion[A]): A = {
     cmp.messageReads.read(fromJsonToPMessage(cmp, value, skipTypeUrl))
+  }
+
+  private def allowNullValueForField(fd: FieldDescriptor): Boolean = {
+    fd.scalaType match {
+      case ScalaType.Message(t) =>
+        t == com.google.protobuf.struct.Value.scalaDescriptor
+      case _ => false
+    }
   }
 
   private def fromJsonToPMessage(
@@ -606,8 +626,8 @@ class Parser private (config: Parser.ParserConfig) {
             val valueMapBuilder = Map.newBuilder[FieldDescriptor, PValue]
             fields.foreach { case (name: String, jValue: JValue) =>
               if (fieldMap.contains(name)) {
-                if (jValue != JNull) {
-                  val fd = fieldMap(name)
+                val fd = fieldMap(name)
+                if (jValue != JNull || allowNullValueForField(fd)) {
                   fd.containingOneof.foreach(o =>
                     if (
                       !config.isIgnoringOverlappingOneofFields && !usedOneofs

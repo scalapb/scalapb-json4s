@@ -45,7 +45,7 @@ trait JavaAssertions {
   val JavaJsonParser = com.google.protobuf.util.JsonFormat.parser()
 
   val ScalaTypeRegistry =
-    registeredCompanions.foldLeft(TypeRegistry.empty)((r, c) =>
+    registeredCompanions.foldLeft(TypeRegistry.default)((r, c) =>
       r.addMessageByCompanion(c.asInstanceOf[GenericCompanion])
     )
   val ScalaJsonParser = new Parser().withTypeRegistry(ScalaTypeRegistry)

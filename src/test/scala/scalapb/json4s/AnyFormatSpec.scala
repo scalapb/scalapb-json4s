@@ -1,7 +1,8 @@
 package scalapb.json4s
 
 import com.google.protobuf.any.{Any => PBAny}
-import jsontest.anytests.{AnyTest, ManyAnyTest}
+import com.google.protobuf.struct.{Value, Struct}
+import jsontest.anytests.{AnyTest, ManyAnyTest, AnyContainer}
 import org.json4s.jackson.JsonMethods._
 
 import scala.language.existentials
@@ -14,6 +15,8 @@ class AnyFormatSpec extends AnyFlatSpec with Matchers with JavaAssertions {
   val RawJson = parse(s"""{"field":"test"}""")
 
   val AnyExample = PBAny.pack(RawExample)
+
+  val AnyWithValue = PBAny.pack(Value())
 
   val AnyJson = parse(
     s"""{"@type":"type.googleapis.com/jsontest.AnyTest","field":"test"}"""
@@ -96,5 +99,40 @@ class AnyFormatSpec extends AnyFlatSpec with Matchers with JavaAssertions {
     ScalaJsonParser.fromJson[PBAny](ManyPackedJson).unpack[ManyAnyTest] must be(
       ManyExample
     )
+  }
+
+  "Any" should "serialize a struct value" in {
+    val optionalAnyJson = parse("""{
+      "optionalAny": {
+        "@type": "type.googleapis.com/google.protobuf.Value",
+        "value": {"foo": 1.0}
+      }
+    }""")
+
+    val input = ScalaJsonParser.fromJson[AnyContainer](optionalAnyJson)
+
+    input.getOptionalAny.unpack[com.google.protobuf.struct.Value] must be(
+      Value().withStructValue(Struct(
+        fields = Map("foo" -> Value().withNumberValue(1)))
+      )
+    )
+
+    ScalaJsonPrinter.toJson(input) must be(optionalAnyJson)
+  }
+
+  "Any" should "work when nested" in {
+    val nestedAny = parse(
+      """{
+        |   "optionalAny": {
+        |     "@type": "type.googleapis.com/google.protobuf.Any",
+        |     "value": {
+        |       "@type": "type.googleapis.com/jsontest.AnyTest",
+        |       "field": "Boo"
+        |     }
+        |   }
+        |}""".stripMargin)
+    
+    val input = ScalaJsonParser.fromJson[AnyContainer](nestedAny)
+    ScalaJsonPrinter.toJson(input) must be(nestedAny)
   }
 }
