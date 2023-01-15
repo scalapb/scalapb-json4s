@@ -89,7 +89,10 @@ class StructFormatSpec extends AnyFlatSpec with Matchers with JavaAssertions {
   }
 
   "Value" should "accept null" in new DefaultParserContext {
-    assertParse("""{"v": null}""", ValueTest().withV(Value().withNullValue(NullValue.NULL_VALUE)))
+    assertParse(
+      """{"v": null}""",
+      ValueTest().withV(Value().withNullValue(NullValue.NULL_VALUE))
+    )
   }
 
   "Struct" should "be serialized the same as in Java (and parsed back to original)" in {

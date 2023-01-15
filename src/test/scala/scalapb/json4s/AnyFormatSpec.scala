@@ -112,8 +112,8 @@ class AnyFormatSpec extends AnyFlatSpec with Matchers with JavaAssertions {
     val input = ScalaJsonParser.fromJson[AnyContainer](optionalAnyJson)
 
     input.getOptionalAny.unpack[com.google.protobuf.struct.Value] must be(
-      Value().withStructValue(Struct(
-        fields = Map("foo" -> Value().withNumberValue(1)))
+      Value().withStructValue(
+        Struct(fields = Map("foo" -> Value().withNumberValue(1)))
       )
     )
 
@@ -121,8 +121,7 @@ class AnyFormatSpec extends AnyFlatSpec with Matchers with JavaAssertions {
   }
 
   "Any" should "work when nested" in {
-    val nestedAny = parse(
-      """{
+    val nestedAny = parse("""{
         |   "optionalAny": {
         |     "@type": "type.googleapis.com/google.protobuf.Any",
         |     "value": {
@@ -131,7 +130,7 @@ class AnyFormatSpec extends AnyFlatSpec with Matchers with JavaAssertions {
         |     }
         |   }
         |}""".stripMargin)
-    
+
     val input = ScalaJsonParser.fromJson[AnyContainer](nestedAny)
     ScalaJsonPrinter.toJson(input) must be(nestedAny)
   }
