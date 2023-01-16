@@ -71,11 +71,11 @@ object Durations {
       throw new ParseException("Invalid duration string: " + value, 0)
     }
 
-    // TODO(thesamet): normalizedDuration?
-
-    com.google.protobuf.duration.Duration(
+    val result = com.google.protobuf.duration.Duration(
       seconds = if (negative) -seconds else seconds,
       nanos = if (negative) -nanos else nanos
     )
+    checkValid(result)
+    result
   }
 }
