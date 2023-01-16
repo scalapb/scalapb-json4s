@@ -4,8 +4,6 @@ scalaVersion := "2.13.10"
 
 crossScalaVersions := Seq("2.12.17", "2.13.10", "3.2.2")
 
-ThisBuild / version := "0.12.1-SNAPSHOT"
-
 ThisBuild / organization := "com.thesamet.scalapb"
 
 name := "scalapb-json4s"
