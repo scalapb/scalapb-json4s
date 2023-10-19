@@ -17,20 +17,22 @@ ThisBuild / scalacOptions ++= Seq("-deprecation") ++ {
 
 ThisBuild / publishTo := sonatypePublishToBundle.value
 
+val protobufJava = "com.google.protobuf" % "protobuf-java" % "3.24.4"
+
 libraryDependencies ++= Seq(
   "com.thesamet.scalapb" %% "scalapb-runtime" % scalapbVersion,
   "com.thesamet.scalapb" %% "scalapb-runtime" % scalapbVersion % "protobuf,test",
   "org.scalatest" %% "scalatest" % "3.2.17" % "test",
   "org.scalatestplus" %% "scalacheck-1-17" % "3.2.17.0" % "test",
-  "com.google.protobuf" % "protobuf-java-util" % "3.21.12" % "test",
-  "com.google.protobuf" % "protobuf-java" % "3.21.12" % "protobuf",
+  "com.google.protobuf" % "protobuf-java-util" % protobufJava.revision % "test",
+  protobufJava % "protobuf",
   "org.json4s" %% "json4s-jackson-core" % "4.0.6"
 )
 
 lazy val root = (project in file("."))
   .settings(
     inConfig(Test)(sbtprotoc.ProtocPlugin.protobufConfigSettings),
-    PB.protocVersion := "3.11.4",
+    PB.protocVersion := protobufJava.revision,
     Compile / PB.targets := Nil,
     Test / PB.targets := Seq(
       PB.gens.java -> (Test / sourceManaged).value,
