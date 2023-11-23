@@ -120,6 +120,24 @@ class AnyFormatSpec extends AnyFlatSpec with Matchers with JavaAssertions {
     ScalaJsonPrinter.toJson(input) must be(optionalAnyJson)
   }
 
+  "Any" should "serialize a timestamp value" in {
+    val optionalAnyJson = parse("""{
+      "optionalAny": {
+        "@type": "type.googleapis.com/google.protobuf.Timestamp",
+        "value": "1970-01-01T00:00:00Z"
+      }
+    }""")
+
+    val input = ScalaJsonParser.fromJson[AnyContainer](optionalAnyJson)
+
+    input.getOptionalAny
+      .unpack[com.google.protobuf.timestamp.Timestamp] must be(
+      com.google.protobuf.timestamp.Timestamp()
+    )
+
+    ScalaJsonPrinter.toJson(input) must be(optionalAnyJson)
+  }
+
   "Any" should "work when nested" in {
     val nestedAny = parse("""{
         |   "optionalAny": {
