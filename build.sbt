@@ -22,7 +22,7 @@ val protobufJava = "com.google.protobuf" % "protobuf-java" % "3.25.3"
 libraryDependencies ++= Seq(
   "com.thesamet.scalapb" %% "scalapb-runtime" % scalapbVersion,
   "com.thesamet.scalapb" %% "scalapb-runtime" % scalapbVersion % "protobuf,test",
-  "org.scalatest" %% "scalatest" % "3.2.18" % "test",
+  "org.scalatest" %% "scalatest" % "3.2.19" % "test",
   "org.scalatestplus" %% "scalacheck-1-17" % "3.2.18.0" % "test",
   "com.google.protobuf" % "protobuf-java-util" % protobufJava.revision % "test",
   protobufJava % "protobuf",
