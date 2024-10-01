@@ -2,7 +2,7 @@ import scalapb.compiler.Version.scalapbVersion
 
 scalaVersion := "2.13.15"
 
-crossScalaVersions := Seq("2.12.20", "2.13.15", "3.4.3")
+crossScalaVersions := Seq("2.12.20", "2.13.15", "3.3.4")
 
 ThisBuild / organization := "com.thesamet.scalapb"
 
