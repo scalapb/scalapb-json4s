@@ -17,7 +17,7 @@ ThisBuild / scalacOptions ++= Seq("-deprecation") ++ {
 
 ThisBuild / publishTo := sonatypePublishToBundle.value
 
-val protobufJava = "com.google.protobuf" % "protobuf-java" % "3.25.5"
+val protobufJava = "com.google.protobuf" % "protobuf-java" % "4.29.0"
 
 libraryDependencies ++= Seq(
   "com.thesamet.scalapb" %% "scalapb-runtime" % scalapbVersion,
