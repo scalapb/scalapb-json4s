@@ -9,7 +9,7 @@ import com.google.protobuf.timestamp.Timestamp
 import scalapb.json4s.JsonFormat.GenericCompanion
 import scalapb._
 import org.json4s.JsonAST._
-import org.json4s.{Reader, Writer, MappingException}
+import org.json4s.{MappingException, Reader, Writer}
 
 import scala.collection.mutable
 import scala.collection.concurrent.TrieMap
@@ -476,6 +476,7 @@ object Parser {
   private final case class ParserConfig(
       isIgnoringUnknownFields: Boolean,
       isIgnoringOverlappingOneofFields: Boolean,
+      areNumericBooleanValuesAllowed: Boolean,
       mapEntriesAsKeyValuePairs: Boolean,
       formatRegistry: FormatRegistry,
       typeRegistry: TypeRegistry
@@ -488,6 +489,7 @@ class Parser private (config: Parser.ParserConfig) {
       Parser.ParserConfig(
         isIgnoringUnknownFields = false,
         isIgnoringOverlappingOneofFields = false,
+        areNumericBooleanValuesAllowed = false,
         mapEntriesAsKeyValuePairs = false,
         JsonFormat.DefaultRegistry,
         TypeRegistry.default
@@ -507,6 +509,7 @@ class Parser private (config: Parser.ParserConfig) {
       Parser.ParserConfig(
         isIgnoringUnknownFields = false,
         isIgnoringOverlappingOneofFields = false,
+        areNumericBooleanValuesAllowed = false,
         mapEntriesAsKeyValuePairs = false,
         formatRegistry,
         typeRegistry
@@ -518,6 +521,9 @@ class Parser private (config: Parser.ParserConfig) {
 
   def ignoringOverlappingOneofFields: Parser =
     new Parser(config.copy(isIgnoringOverlappingOneofFields = true))
+
+  def allowNumericBooleanValues: Parser =
+    new Parser(config.copy(areNumericBooleanValuesAllowed = true))
 
   def mapEntriesAsKeyValuePairs: Parser =
     new Parser(config.copy(mapEntriesAsKeyValuePairs = true))
@@ -734,7 +740,8 @@ class Parser private (config: Parser.ParserConfig) {
           value,
           throw new JsonFormatException(
             s"Unexpected value ($value) for field ${fd.name} of ${fd.containingMessage.name}"
-          )
+          ),
+          allowNumericBooleans = config.areNumericBooleanValuesAllowed
         )
     }
 }
@@ -922,7 +929,8 @@ object JsonFormat {
   def parsePrimitive(
       protoType: FieldDescriptorProto.Type,
       value: JValue,
-      onError: => PValue
+      onError: => PValue,
+      allowNumericBooleans: Boolean = false
   ): PValue =
     (protoType, value) match {
       case (Type.TYPE_UINT32 | Type.TYPE_FIXED32, JInt(x)) =>
@@ -986,6 +994,13 @@ object JsonFormat {
       case (Type.TYPE_BOOL, JBool(b))         => PBoolean(b)
       case (Type.TYPE_BOOL, JString("true"))  => PBoolean(true)
       case (Type.TYPE_BOOL, JString("false")) => PBoolean(false)
+      case (Type.TYPE_BOOL, JInt(i)) => {
+        (allowNumericBooleans, i.toInt) match {
+          case (true, 0) => PBoolean(false)
+          case (true, 1) => PBoolean(true)
+          case (_, _) => onError
+        }
+      }
       case (Type.TYPE_STRING, JString(s))     => PString(s)
       case (Type.TYPE_BYTES, JString(s)) =>
         PByteString(
