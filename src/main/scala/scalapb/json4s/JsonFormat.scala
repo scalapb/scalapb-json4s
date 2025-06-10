@@ -324,7 +324,7 @@ class Printer private (config: Printer.PrinterConfig) {
                 case PInt(v)     => v.toString
                 case PLong(v)    => v.toString
                 case PString(v)  => v
-                case v =>
+                case v           =>
                   throw new JsonFormatException(s"Unexpected value for key: $v")
               }
               val value = if (valueDescriptor.protoType.isTypeMessage) {
@@ -396,7 +396,7 @@ class Printer private (config: Printer.PrinterConfig) {
       m.companion.asInstanceOf[GeneratedMessageCompanion[A]]
     ) match {
       case Some(f) => f(this, m)
-      case None =>
+      case None    =>
         val b = List.newBuilder[JField]
         val descriptor = m.companion.scalaDescriptor
         b.sizeHint(descriptor.fields.size)
@@ -450,7 +450,7 @@ class Printer private (config: Printer.PrinterConfig) {
       case PEnum(e) =>
         config.formatRegistry.getEnumWriter(e.containingEnum) match {
           case Some(writer) => writer(this, e)
-          case None =>
+          case None         =>
             if (config.isFormattingEnumsAsNumber || e.isUnrecognized)
               JInt(e.number)
             else JString(e.name)
@@ -460,11 +460,11 @@ class Printer private (config: Printer.PrinterConfig) {
       case PInt(v)                               => JInt(v)
       case PLong(v)   => formatLong(v, fd.protoType, formattingLongAsNumber)
       case PDouble(v) => JDouble(v)
-      case PFloat(v) =>
+      case PFloat(v)  =>
         if (!v.isNaN && !v.isInfinite) JDecimal(BigDecimal.decimal(v))
         else JDouble(v)
-      case PBoolean(v) => JBool(v)
-      case PString(v)  => JString(v)
+      case PBoolean(v)    => JBool(v)
+      case PString(v)     => JString(v)
       case PByteString(v) =>
         JString(Base64Variants.getDefaultVariant.encode(v.toByteArray))
       case _: PMessage | PRepeated(_) | PEmpty =>
@@ -581,7 +581,7 @@ class Parser private (config: Parser.ParserConfig) {
                 case ScalaType.Int    => PInt(java.lang.Integer.valueOf(key))
                 case ScalaType.Long   => PLong(java.lang.Long.valueOf(key))
                 case ScalaType.String => PString(key)
-                case _ =>
+                case _                =>
                   throw new RuntimeException(
                     s"Unsupported type for key for ${fd.name}"
                   )
@@ -618,7 +618,7 @@ class Parser private (config: Parser.ParserConfig) {
       cmp.asInstanceOf[GeneratedMessageCompanion[GeneratedMessage]]
     ) match {
       case Some(p) => p(this, value).toPMessage
-      case None =>
+      case None    =>
         value match {
           case JObject(fields) =>
             val usedOneofs = mutable.Set[OneofDescriptor]()
@@ -987,7 +987,7 @@ object JsonFormat {
       case (Type.TYPE_BOOL, JString("true"))  => PBoolean(true)
       case (Type.TYPE_BOOL, JString("false")) => PBoolean(false)
       case (Type.TYPE_STRING, JString(s))     => PString(s)
-      case (Type.TYPE_BYTES, JString(s)) =>
+      case (Type.TYPE_BYTES, JString(s))      =>
         PByteString(
           ByteString.copyFrom(Base64Variants.getDefaultVariant.decode(s))
         )
@@ -1072,7 +1072,7 @@ object JsonFormat {
       case "NaN"       => PDouble(Double.NaN)
       case "Infinity"  => PDouble(Double.PositiveInfinity)
       case "-Infinity" => PDouble(Double.NegativeInfinity)
-      case v =>
+      case v           =>
         try {
           val bd = new java.math.BigDecimal(v)
           if (bd.compareTo(MAX_DOUBLE) > 0 || bd.compareTo(MIN_DOUBLE) < 0) {
@@ -1081,7 +1081,7 @@ object JsonFormat {
           PDouble(bd.doubleValue)
         } catch {
           case e: JsonFormatException => throw e
-          case e: Exception =>
+          case e: Exception           =>
             throw new JsonFormatException("Not a double value: " + v)
         }
     }
@@ -1091,7 +1091,7 @@ object JsonFormat {
       case "NaN"       => PFloat(Float.NaN)
       case "Infinity"  => PFloat(Float.PositiveInfinity)
       case "-Infinity" => PFloat(Float.NegativeInfinity)
-      case v =>
+      case v           =>
         try {
           val value = java.lang.Double.parseDouble(v)
           if (
@@ -1103,7 +1103,7 @@ object JsonFormat {
           PFloat(value.toFloat)
         } catch {
           case e: JsonFormatException => throw e
-          case e: Exception =>
+          case e: Exception           =>
             throw new JsonFormatException("Not a float value: " + v)
         }
     }
