@@ -15,8 +15,6 @@ ThisBuild / scalacOptions ++= Seq("-deprecation") ++ {
   }
 }
 
-ThisBuild / publishTo := sonatypePublishToBundle.value
-
 val protobufJava = "com.google.protobuf" % "protobuf-java" % "3.25.8"
 
 libraryDependencies ++= Seq(
