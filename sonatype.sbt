@@ -1,18 +1,14 @@
-sonatypeProfileName := "com.thesamet"
-
-pomExtra in Global := {
-  <url>https://github.com/scalapb/scalapb-json4s</url>
-  <licenses>
-    <license>
-      <name>Apache 2</name>
-      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
-    </license>
-  </licenses>
-  <developers>
-    <developer>
-      <id>thesamet</id>
-      <name>Nadav S. Samet</name>
-      <url>http://www.thesamet.com/</url>
-    </developer>
-  </developers>
-}
+inThisBuild(
+  List(
+    homepage := Some(url("https://github.com/scalapb/scalapb-json4s")),
+    licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
+    developers := List(
+      Developer(
+        "thesamet",
+        "Nadav Samet",
+        "thesamet@gmail.com",
+        url("https://thesamet.com")
+      )
+    )
+  )
+)
