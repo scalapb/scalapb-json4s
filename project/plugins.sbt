@@ -1,4 +1,4 @@
-addSbtPlugin("com.github.sbt" % "sbt-pgp" % "2.3.1")
+addSbtPlugin("com.github.sbt" % "sbt-pgp" % "2.3.2")
 
 addSbtPlugin("com.thesamet" % "sbt-protoc" % "1.0.8")
 libraryDependencies += "com.thesamet.scalapb" %% "compilerplugin" % "1.0.0-alpha.5"
