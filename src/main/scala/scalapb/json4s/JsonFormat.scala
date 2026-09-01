@@ -651,7 +651,7 @@ class Parser private (config: Parser.ParserConfig) {
 
             PMessage(valueMapBuilder.result())
           case _ =>
-            throw new JsonFormatException(s"Expected an object, found ${value}")
+            throw new JsonFormatException(s"Expected an object for ${cmp.scalaDescriptor.fullName}, found ${value}")
         }
     }
   }
@@ -723,11 +723,19 @@ class Parser private (config: Parser.ParserConfig) {
         res.fold[PValue](PEmpty)(PEnum.apply)
       }
       case ScalaType.Message(md) =>
-        fromJsonToPMessage(
-          containerCompanion.messageCompanionForFieldNumber(fd.number),
-          value,
-          false
-        )
+        try {
+          fromJsonToPMessage(
+            containerCompanion.messageCompanionForFieldNumber(fd.number),
+            value,
+            false
+          )
+        } catch {
+          case ex: JsonFormatException =>
+            throw new JsonFormatException(
+              s"Failed parsing field ${fd.name}: ${ex.getMessage}",
+              ex
+            )
+        }
       case st =>
         JsonFormat.parsePrimitive(
           fd.protoType,
