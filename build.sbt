@@ -26,7 +26,7 @@ libraryDependencies ++= Seq(
   "org.scalatestplus" %% "scalacheck-1-19" % "3.2.20.0" % "test",
   "com.google.protobuf" % "protobuf-java-util" % protobufJava.revision % "test",
   protobufJava % "protobuf",
-  "org.json4s" %% "json4s-jackson-core" % "4.0.7"
+  "io.github.json4s" %% "json4s-jackson-core" % "4.1.1"
 )
 
 lazy val root = (project in file("."))
