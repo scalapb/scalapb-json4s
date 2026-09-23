@@ -1,8 +1,8 @@
 import scalapb.compiler.Version.scalapbVersion
 
-scalaVersion := "2.13.18"
+scalaVersion := "3.9.0"
 
-crossScalaVersions := Seq("2.12.21", "2.13.18", "3.3.8")
+crossScalaVersions := Seq("2.12.21", "3.9.0", "3.3.8")
 
 ThisBuild / organization := "com.thesamet.scalapb"
 
