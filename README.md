@@ -11,6 +11,11 @@ Bugs: https://github.com/scalapb/ScalaPB/issues/
 Questions: https://groups.google.com/forum/#!forum/scalapb
 
 
+### Requirements
+
+The Scala 3 build requires Java 11 or newer with ScalaPB 1.0.0-alpha.6.
+Scala 3.3 LTS and Scala 2.12/2.13 remain supported.
+
 ### Parsing limits
 
 The parser accepts up to 100 nested JSON objects and arrays by default. The root
