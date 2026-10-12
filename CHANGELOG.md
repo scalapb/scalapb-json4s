@@ -3,7 +3,7 @@
 This file tracks all release lines. Master's history below covers changes since
 its last common commit with `0.12.x`, `2afe38f` (2023-11-23).
 
-## Unreleased — 1.0.x (master)
+## 1.0.0-alpha.2 — 2026-10-12
 
 Changes since `1.0.0-alpha.1` on the master branch.
 
@@ -53,7 +53,7 @@ Changes since `1.0.0-alpha.1` on the master branch.
 - Run tests, formatting, and binary-compatibility checks on tag revisions before
   publishing. Modernize publishing metadata and release tooling.
 
-## Unreleased — 0.12.x
+## 0.12.3 — 2026-10-12
 
 Changes since `0.12.2` on the `0.12.x` maintenance branch.
 
