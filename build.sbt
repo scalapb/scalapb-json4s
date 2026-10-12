@@ -8,12 +8,7 @@ ThisBuild / organization := "com.thesamet.scalapb"
 
 name := "scalapb-json4s"
 
-ThisBuild / scalacOptions ++= Seq("-deprecation") ++ {
-  CrossVersion.partialVersion(scalaVersion.value) match {
-    case Some((2, v)) if v <= 11 => List("-target:jvm-1.7")
-    case _                       => Nil
-  }
-}
+ThisBuild / scalacOptions ++= Seq("-deprecation")
 
 val protobufJava = "com.google.protobuf" % "protobuf-java" % "3.25.9"
 
