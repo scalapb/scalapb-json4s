@@ -10,7 +10,7 @@ name := "scalapb-json4s"
 
 ThisBuild / scalacOptions ++= Seq("-deprecation")
 
-val protobufJava = "com.google.protobuf" % "protobuf-java" % "3.25.9"
+val protobufJava = "com.google.protobuf" % "protobuf-java" % "4.36.2"
 
 libraryDependencies ++= Seq(
   "com.thesamet.scalapb" %% "scalapb-runtime" % scalapbVersion,
