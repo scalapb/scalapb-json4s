@@ -19,8 +19,10 @@
 
 ## Changelog and releases
 
-- Update `CHANGELOG.md` under `Unreleased` for user-visible changes.
-  Create the file if the target branch does not have one.
+- Maintain the canonical `CHANGELOG.md` on master for all release lines, including `0.12.x`.
+- Record user-visible changes in the relevant release line's `Unreleased` section on master,
+  even when the code change targets a maintenance branch. Do not create separate branch changelogs.
+- Keep released entries in master's changelog as the shared release history.
 - Describe observable behavior, compatibility implications, and migration steps
   rather than implementation details.
 - Release versions come from Git tags. Do not tag or publish releases without explicit authorization.
