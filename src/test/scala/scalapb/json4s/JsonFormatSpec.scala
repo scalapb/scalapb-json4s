@@ -456,6 +456,17 @@ class JsonFormatSpec
     )
   }
 
+  "TestProto" should "fail to parse a field of type Message when it's not a json object" in {
+    val jsonFormatException = intercept[JsonFormatException] {
+      new Parser().fromJsonString[MyTest](
+        """{"optMessage": 39}"""
+      )
+    }
+    jsonFormatException.getMessage must be (
+      "Failed parsing field opt_message: Expected an object for jsontest.MyTest, found JInt(39)"
+    )
+  }
+
   "TestProto" should "parse original field names" in {
     new Parser().fromJsonString[MyTest]("""{"opt_enum":1}""") must be(
       MyTest(optEnum = Some(MyEnum.V1))
