@@ -1,5 +1,3 @@
-sonatypeProfileName := "com.thesamet"
-
 pomExtra in Global := {
   <url>https://github.com/scalapb/scalapb-json4s</url>
   <licenses>
