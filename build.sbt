@@ -8,12 +8,7 @@ ThisBuild / organization := "com.thesamet.scalapb"
 
 name := "scalapb-json4s"
 
-ThisBuild / scalacOptions ++= Seq("-deprecation") ++ {
-  CrossVersion.partialVersion(scalaVersion.value) match {
-    case Some((2, v)) if v <= 11 => List("-target:jvm-1.7")
-    case _                       => Nil
-  }
-}
+ThisBuild / scalacOptions ++= Seq("-deprecation")
 
 // Build on JDK 11+, while preserving Java 8 bytecode and API compatibility.
 scalacOptions += "-release:8"
