@@ -41,5 +41,5 @@ lazy val root = (project in file("."))
 
 // Last published release on master's 1.0 line (available for every Scala version).
 mimaPreviousArtifacts := Set(
-  "com.thesamet.scalapb" %% "scalapb-json4s" % "1.0.0-alpha.1"
+  "com.thesamet.scalapb" %% "scalapb-json4s" % "1.0.0-alpha.2"
 )

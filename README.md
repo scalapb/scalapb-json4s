@@ -23,9 +23,9 @@ targets (8 for Scala 2, 11 for Scala 3) to constrain bytecode and JDK API usage.
 Validate all three Scala versions on JDK 11 and 21, and the Scala 2 artifacts on
 Java 8; a release target alone does not verify runtime compatibility.
 
-MiMa checks master against the published `1.0.0-alpha.1` artifacts for all three
+MiMa checks master against the published `1.0.0-alpha.2` artifacts for all three
 Scala versions. For the `0.12.x` maintenance line, the corresponding last-release
-baseline is `0.12.2`; that line retains protobuf 3 and json4s 4.0.x. Compatibility
+baseline is `0.12.3`; that line retains protobuf 3 and json4s 4.0.x. Compatibility
 across dependency major versions is not implied by a successful MiMa check of
 this library.
 
