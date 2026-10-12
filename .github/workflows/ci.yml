@@ -1,7 +1,9 @@
 name: CI
 
 on:
+  # PR events cover feature branches; avoid running the same matrix twice.
   push:
+    branches: [master, 0.12.x]
   pull_request:
   workflow_call:
 
