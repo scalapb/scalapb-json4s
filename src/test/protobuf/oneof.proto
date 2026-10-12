@@ -3,12 +3,14 @@ syntax = "proto3";
 package jsontest;
 
 import "google/protobuf/wrappers.proto";
+import "google/protobuf/struct.proto";
 
 message OneOf {
     oneof field {
         string primitive = 1;
         google.protobuf.StringValue wrapper = 2;
         OneOfMessage message = 3;
+        google.protobuf.NullValue null_value = 4;
     }
 }
 
