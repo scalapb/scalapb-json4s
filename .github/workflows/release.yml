@@ -17,9 +17,9 @@ jobs:
     needs: validate
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    # Serialize publication without interrupting an active upload.
+    # Serialize each ref without allowing other tags to displace pending releases.
     concurrency:
-      group: release-publish
+      group: release-publish-${{ github.ref }}
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v7
