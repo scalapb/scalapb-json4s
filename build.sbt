@@ -15,6 +15,10 @@ ThisBuild / scalacOptions ++= Seq("-deprecation") ++ {
   }
 }
 
+// Build on JDK 11+, while preserving Java 8 bytecode and API compatibility.
+scalacOptions += "-release:8"
+javacOptions ++= Seq("--release", "8")
+
 val protobufJava = "com.google.protobuf" % "protobuf-java" % "3.25.9"
 
 libraryDependencies ++= Seq(
@@ -40,5 +44,5 @@ lazy val root = (project in file("."))
   )
 
 mimaPreviousArtifacts := Set(
-  "com.thesamet.scalapb" %% "scalapb-json4s" % "0.11.0"
+  "com.thesamet.scalapb" %% "scalapb-json4s" % "0.12.2"
 )

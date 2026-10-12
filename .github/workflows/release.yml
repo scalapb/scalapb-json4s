@@ -1,21 +1,44 @@
 name: Release
+
 on:
   push:
     branches: [master]
     tags: ["*"]
+
+permissions:
+  contents: read
+
 jobs:
+  # A local reusable workflow validates this exact revision, including tag pushes.
+  validate:
+    uses: ./.github/workflows/ci.yml
+
   publish:
+    needs: validate
     runs-on: ubuntu-latest
+    timeout-minutes: 60
+    # Serialize each ref without allowing other tags to displace pending releases.
+    concurrency:
+      group: release-publish-${{ github.ref }}
+      cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v4
-      - name: Set up JDK 1.8
-        uses: actions/setup-java@v4
+      - uses: actions/checkout@v7
         with:
-            java-version: 8
-            distribution: temurin
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Set up JDK 11
+        uses: actions/setup-java@v6
+        with:
+          java-version: 11
+          distribution: temurin
+          cache: sbt
+          cache-dependency-path: |
+            **/*.sbt
+            project/build.properties
+            .scalafmt.conf
       - uses: sbt/setup-sbt@v1
-      - uses: olafurpg/setup-gpg@v3
-      - name: Publish ${{ github.ref }}
+      # sbt-ci-release imports PGP_SECRET itself.
+      - name: Publish
         run: sbt ci-release
         env:
           PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
