@@ -478,7 +478,8 @@ object Parser {
       isIgnoringOverlappingOneofFields: Boolean,
       mapEntriesAsKeyValuePairs: Boolean,
       formatRegistry: FormatRegistry,
-      typeRegistry: TypeRegistry
+      typeRegistry: TypeRegistry,
+      nestingLimit: Int = 100
   )
 }
 
@@ -528,18 +529,29 @@ class Parser private (config: Parser.ParserConfig) {
   def withTypeRegistry(typeRegistry: TypeRegistry) =
     new Parser(config.copy(typeRegistry = typeRegistry))
 
+  /** Limits nested JSON objects and arrays, counting the root container as one.
+    * This also covers Any, Struct/Value, maps, repeated fields, and ignored
+    * fields.
+    */
+  def withNestingLimit(limit: Int): Parser = {
+    require(limit >= 0, "nesting limit must be non-negative")
+    new Parser(config.copy(nestingLimit = limit))
+  }
+
   def typeRegistry: TypeRegistry = config.typeRegistry
 
   def fromJsonString[A <: GeneratedMessage: GeneratedMessageCompanion](
       str: String
   ): A = {
     import org.json4s.jackson.JsonMethods._
+    ParserLimits.checkString(str, config.nestingLimit)
     fromJson(parse(str, useBigDecimalForDouble = true))
   }
 
   def fromJson[A <: GeneratedMessage: GeneratedMessageCompanion](
       value: JValue
   ): A = {
+    ParserLimits.checkValue(value, config.nestingLimit)
     fromJson(value, false)
   }
 
@@ -554,6 +566,8 @@ class Parser private (config: Parser.ParserConfig) {
     fd.scalaType match {
       case ScalaType.Message(t) =>
         t == com.google.protobuf.struct.Value.scalaDescriptor
+      case ScalaType.Enum(t) =>
+        t == com.google.protobuf.struct.NullValue.scalaDescriptor
       case _ => false
     }
   }
@@ -684,12 +698,13 @@ class Parser private (config: Parser.ParserConfig) {
           case e: ArithmeticException => defaultValue
         }
       case JInt(v) =>
-        enumValueFromInt(v.toInt)
+        if (v.isValidInt) enumValueFromInt(v.toInt) else defaultValue
       case JString(s) =>
         enumDescriptor.values
           .find(_.name == s)
           .orElse {
             try {
+              ParserLimits.checkNumberLength(s.length)
               enumValueFromInt(new java.math.BigDecimal(s).intValueExact)
             } catch {
               case _: ArithmeticException   => None
@@ -988,13 +1003,23 @@ object JsonFormat {
       case (Type.TYPE_BOOL, JString("false")) => PBoolean(false)
       case (Type.TYPE_STRING, JString(s))     => PString(s)
       case (Type.TYPE_BYTES, JString(s))      =>
-        PByteString(
-          ByteString.copyFrom(Base64Variants.getDefaultVariant.decode(s))
-        )
+        try {
+          PByteString(
+            ByteString.copyFrom(
+              java.util.Base64.getDecoder.decode(
+                s.replace('-', '+').replace('_', '/')
+              )
+            )
+          )
+        } catch {
+          case e: IllegalArgumentException =>
+            throw new JsonFormatException("Invalid Base64 bytes value", e)
+        }
       case _ => onError
     }
 
   def parseBigDecimal(value: String): BigDecimal = {
+    ParserLimits.checkNumberLength(value.length)
     try {
       // JSON doesn't distinguish between integer values and floating point values so "1" and
       // "1.000" are treated as equal in JSON. For this reason we accept floating point values for
@@ -1007,6 +1032,7 @@ object JsonFormat {
   }
 
   def parseInt32(value: String): PValue = {
+    ParserLimits.checkNumberLength(value.length)
     try {
       PInt(value.toInt)
     } catch {
@@ -1021,6 +1047,7 @@ object JsonFormat {
   }
 
   def parseInt64(value: String): PValue = {
+    ParserLimits.checkNumberLength(value.length)
     try {
       PLong(value.toLong)
     } catch {
@@ -1036,6 +1063,7 @@ object JsonFormat {
   }
 
   def parseUint32(value: String): PValue = {
+    ParserLimits.checkNumberLength(value.length)
     try {
       val result = value.toLong
       if (result < 0 || result > 0xffffffffL)
@@ -1045,9 +1073,10 @@ object JsonFormat {
       case e: JsonFormatException => throw e
       case e: Exception           => // Fall through.
     }
-    parseBigDecimal(value).toBigIntExact.map { intVal =>
-      if (intVal < 0 || intVal > 0xffffffffL)
-        throw new JsonFormatException(s"Out of range uint32 value: $value")
+    val decimal = parseBigDecimal(value)
+    if (decimal < 0 || decimal > BigDecimal("4294967295"))
+      throw new JsonFormatException(s"Out of range uint32 value: $value")
+    decimal.toBigIntExact.map { intVal =>
       PInt(intVal.intValue)
     } getOrElse {
       throw new JsonFormatException(s"Not an uint32 value: $value")
@@ -1057,10 +1086,11 @@ object JsonFormat {
   val MAX_UINT64 = BigInt("FFFFFFFFFFFFFFFF", 16)
 
   def parseUint64(value: String): PValue = {
-    parseBigDecimal(value).toBigIntExact.map { intVal =>
-      if (intVal < 0 || intVal > MAX_UINT64) {
-        throw new JsonFormatException(s"Out of range uint64 value: $value")
-      }
+    ParserLimits.checkNumberLength(value.length)
+    val decimal = parseBigDecimal(value)
+    if (decimal < 0 || decimal > BigDecimal(MAX_UINT64))
+      throw new JsonFormatException(s"Out of range uint64 value: $value")
+    decimal.toBigIntExact.map { intVal =>
       PLong(intVal.longValue)
     } getOrElse {
       throw new JsonFormatException(s"Not an uint64 value: $value")
@@ -1074,6 +1104,7 @@ object JsonFormat {
       case "-Infinity" => PDouble(Double.NegativeInfinity)
       case v           =>
         try {
+          ParserLimits.checkNumberLength(v.length)
           val bd = new java.math.BigDecimal(v)
           if (bd.compareTo(MAX_DOUBLE) > 0 || bd.compareTo(MIN_DOUBLE) < 0) {
             throw new JsonFormatException("Out of range double value: " + v)
@@ -1093,6 +1124,7 @@ object JsonFormat {
       case "-Infinity" => PFloat(Float.NegativeInfinity)
       case v           =>
         try {
+          ParserLimits.checkNumberLength(v.length)
           val value = java.lang.Double.parseDouble(v)
           if (
             (value > Float.MaxValue * (1.0 + EPSILON)) ||
