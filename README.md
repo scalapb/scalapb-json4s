@@ -18,5 +18,5 @@ Build with JDK 11 or newer; explicit Scala and Java release targets preserve
 Java 8 bytecode and API compatibility. CI also runs the compiled test suites
 on Java 8 and builds on JDK 11 and 21.
 
-MiMa checks all three Scala artifacts against the published `0.12.2` release.
+MiMa checks all three Scala artifacts against the published `0.12.3` release.
 

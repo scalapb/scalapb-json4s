@@ -39,5 +39,5 @@ lazy val root = (project in file("."))
   )
 
 mimaPreviousArtifacts := Set(
-  "com.thesamet.scalapb" %% "scalapb-json4s" % "0.12.2"
+  "com.thesamet.scalapb" %% "scalapb-json4s" % "0.12.3"
 )
