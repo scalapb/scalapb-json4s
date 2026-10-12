@@ -13,8 +13,21 @@ Questions: https://groups.google.com/forum/#!forum/scalapb
 
 ### Requirements
 
-The Scala 3 build requires Java 11 or newer with ScalaPB 1.0.0-alpha.6.
-Scala 3.3 LTS and Scala 2.12/2.13 remain supported.
+Scala 2.12/2.13 require Java 8 or newer; Scala 3.3 LTS requires Java 11 or
+newer. These minimums include the runtime dependencies: [ScalaPB 1.0.0-alpha.6](https://github.com/scalapb/ScalaPB/blob/v1.0.0-alpha.6/project/BuildHelper.scala)
+and json4s 4.1.1 target Java 8 for Scala 2 and Java 11 for Scala 3.
+[Protobuf Java 4.36.2 still targets Java 8](https://github.com/protocolbuffers/protobuf/blob/v36.2/java/pom.xml).
+
+Build with JDK 11 or newer. Both Scala and Java compilation use explicit release
+targets (8 for Scala 2, 11 for Scala 3) to constrain bytecode and JDK API usage.
+Validate all three Scala versions on JDK 11 and 21, and the Scala 2 artifacts on
+Java 8; a release target alone does not verify runtime compatibility.
+
+MiMa checks master against the published `1.0.0-alpha.1` artifacts for all three
+Scala versions. For the `0.12.x` maintenance line, the corresponding last-release
+baseline is `0.12.2`; that line retains protobuf 3 and json4s 4.0.x. Compatibility
+across dependency major versions is not implied by a successful MiMa check of
+this library.
 
 ### Parsing limits
 

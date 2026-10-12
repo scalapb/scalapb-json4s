@@ -10,6 +10,11 @@ name := "scalapb-json4s"
 
 ThisBuild / scalacOptions ++= Seq("-deprecation")
 
+val javaRelease = settingKey[String]("Minimum Java runtime and API version")
+javaRelease := (if (scalaBinaryVersion.value == "3") "11" else "8")
+scalacOptions += s"-release:${javaRelease.value}"
+javacOptions ++= Seq("--release", javaRelease.value)
+
 val protobufJava = "com.google.protobuf" % "protobuf-java" % "4.36.2"
 
 libraryDependencies ++= Seq(
@@ -34,6 +39,7 @@ lazy val root = (project in file("."))
     compileOrder := CompileOrder.JavaThenScala
   )
 
+// Last published release on master's 1.0 line (available for every Scala version).
 mimaPreviousArtifacts := Set(
-  "com.thesamet.scalapb" %% "scalapb-json4s" % "0.11.0"
+  "com.thesamet.scalapb" %% "scalapb-json4s" % "1.0.0-alpha.1"
 )
