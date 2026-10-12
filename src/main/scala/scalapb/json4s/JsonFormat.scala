@@ -554,6 +554,8 @@ class Parser private (config: Parser.ParserConfig) {
     fd.scalaType match {
       case ScalaType.Message(t) =>
         t == com.google.protobuf.struct.Value.scalaDescriptor
+      case ScalaType.Enum(t) =>
+        t == com.google.protobuf.struct.NullValue.scalaDescriptor
       case _ => false
     }
   }
@@ -684,7 +686,7 @@ class Parser private (config: Parser.ParserConfig) {
           case e: ArithmeticException => defaultValue
         }
       case JInt(v) =>
-        enumValueFromInt(v.toInt)
+        if (v.isValidInt) enumValueFromInt(v.toInt) else defaultValue
       case JString(s) =>
         enumDescriptor.values
           .find(_.name == s)
@@ -988,9 +990,20 @@ object JsonFormat {
       case (Type.TYPE_BOOL, JString("false")) => PBoolean(false)
       case (Type.TYPE_STRING, JString(s))     => PString(s)
       case (Type.TYPE_BYTES, JString(s))      =>
-        PByteString(
-          ByteString.copyFrom(Base64Variants.getDefaultVariant.decode(s))
-        )
+        // Preserve every form accepted by the legacy decoder, including whitespace.
+        val bytes = try {
+          Base64Variants.getDefaultVariant.decode(s)
+        } catch {
+          case _: IllegalArgumentException =>
+            try {
+              java.util.Base64.getDecoder
+                .decode(s.replace('-', '+').replace('_', '/'))
+            } catch {
+              case e: IllegalArgumentException =>
+                throw new JsonFormatException("Invalid Base64 bytes value", e)
+            }
+        }
+        PByteString(ByteString.copyFrom(bytes))
       case _ => onError
     }
 
@@ -1045,9 +1058,10 @@ object JsonFormat {
       case e: JsonFormatException => throw e
       case e: Exception           => // Fall through.
     }
-    parseBigDecimal(value).toBigIntExact.map { intVal =>
-      if (intVal < 0 || intVal > 0xffffffffL)
-        throw new JsonFormatException(s"Out of range uint32 value: $value")
+    val decimal = parseBigDecimal(value)
+    if (decimal < 0 || decimal > BigDecimal("4294967295"))
+      throw new JsonFormatException(s"Out of range uint32 value: $value")
+    decimal.toBigIntExact.map { intVal =>
       PInt(intVal.intValue)
     } getOrElse {
       throw new JsonFormatException(s"Not an uint32 value: $value")
@@ -1057,10 +1071,10 @@ object JsonFormat {
   val MAX_UINT64 = BigInt("FFFFFFFFFFFFFFFF", 16)
 
   def parseUint64(value: String): PValue = {
-    parseBigDecimal(value).toBigIntExact.map { intVal =>
-      if (intVal < 0 || intVal > MAX_UINT64) {
-        throw new JsonFormatException(s"Out of range uint64 value: $value")
-      }
+    val decimal = parseBigDecimal(value)
+    if (decimal < 0 || decimal > BigDecimal(MAX_UINT64))
+      throw new JsonFormatException(s"Out of range uint64 value: $value")
+    decimal.toBigIntExact.map { intVal =>
       PLong(intVal.longValue)
     } getOrElse {
       throw new JsonFormatException(s"Not an uint64 value: $value")
