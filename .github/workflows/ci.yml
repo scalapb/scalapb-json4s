@@ -46,18 +46,20 @@ jobs:
             .scalafmt.conf
       - uses: sbt/setup-sbt@v1
       # Build with JDK 11 (--release); execute Scala 2 tests on Java 8.
+      # Java 8 cannot read the argument files used by newer sbt versions.
+      # Set only the forked JVM, leaving compilation on the build JDK.
       # Apply fork settings after each Scala switch so both test runs use Java 8.
       - name: Test Scala 2 bytecode on Java 8
         if: matrix.java == 8
         run: >-
-          sbt
+          sbt -Dsbt.argsfile=false
           '++2.12.21'
           'set Test / fork := true'
-          'set Test / javaHome := Some(file(sys.env("JAVA_HOME_8_X64")))'
+          'set Test / forkOptions := (Test / forkOptions).value.withJavaHome(Some(file(sys.env("JAVA_HOME_8_X64"))))'
           test
           '++2.13.18'
           'set Test / fork := true'
-          'set Test / javaHome := Some(file(sys.env("JAVA_HOME_8_X64")))'
+          'set Test / forkOptions := (Test / forkOptions).value.withJavaHome(Some(file(sys.env("JAVA_HOME_8_X64"))))'
           test
       - name: Compile and test all Scala versions
         if: matrix.java != 8
