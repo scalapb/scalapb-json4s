@@ -3,6 +3,14 @@
 This file tracks all release lines. Master's history below covers changes since
 its last common commit with `0.12.x`, `2afe38f` (2023-11-23).
 
+## Unreleased — 1.0.x (master)
+
+No changes yet since `1.0.0-alpha.2`.
+
+## Unreleased — 0.12.x
+
+No changes yet since `0.12.3`.
+
 ## 1.0.0-alpha.2 — 2026-10-12
 
 Changes since `1.0.0-alpha.1` on the master branch.
