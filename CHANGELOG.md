@@ -5,7 +5,7 @@ its last common commit with `0.12.x`, `2afe38f` (2023-11-23).
 
 ## Unreleased — 1.0.x (master)
 
-No changes yet since `1.0.0-alpha.3`.
+- When ignoring unknown JSON fields, omit unknown enum names from repeated fields and maps instead of inserting default values or failing. Unknown numeric proto3 values remain supported.
 
 ## 1.0.0-alpha.3 — 2026-11-01
 

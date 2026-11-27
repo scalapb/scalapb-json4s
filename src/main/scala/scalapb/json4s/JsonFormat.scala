@@ -594,7 +594,7 @@ class Parser private (config: Parser.ParserConfig) {
               fd.scalaType.asInstanceOf[ScalaType.Message].descriptor
             val keyDescriptor = mapEntryDesc.findFieldByNumber(1).get
             val valueDescriptor = mapEntryDesc.findFieldByNumber(2).get
-            PRepeated(vals.iterator.map { case (key, jValue) =>
+            PRepeated(vals.iterator.flatMap { case (key, jValue) =>
               val keyObj = keyDescriptor.scalaType match {
                 case ScalaType.Boolean =>
                   PBoolean(java.lang.Boolean.valueOf(key))
@@ -609,16 +609,18 @@ class Parser private (config: Parser.ParserConfig) {
                     s"Unsupported type for key for ${fd.name}"
                   )
               }
-              PMessage(
-                Map(
-                  keyDescriptor -> keyObj,
-                  valueDescriptor -> parseSingleValue(
-                    cmp.messageCompanionForFieldNumber(fd.number),
-                    valueDescriptor,
-                    jValue
+              val parsedValue = parseSingleValue(
+                cmp.messageCompanionForFieldNumber(fd.number),
+                valueDescriptor,
+                jValue
+              )
+              if (parsedValue == PEmpty) None
+              else
+                Some(
+                  PMessage(
+                    Map(keyDescriptor -> keyObj, valueDescriptor -> parsedValue)
                   )
                 )
-              )
             }.toVector)
           case _ =>
             throw new JsonFormatException(
@@ -628,7 +630,12 @@ class Parser private (config: Parser.ParserConfig) {
       } else if (fd.isRepeated) {
         value match {
           case JArray(vals) =>
-            PRepeated(vals.map(parseSingleValue(cmp, fd, _)).toVector)
+            PRepeated(
+              vals
+                .map(parseSingleValue(cmp, fd, _))
+                .filterNot(_ == PEmpty)
+                .toVector
+            )
           case _ =>
             throw new JsonFormatException(
               s"Expected an array for repeated field ${fd.name} of ${fd.containingMessage.name}"
@@ -651,17 +658,20 @@ class Parser private (config: Parser.ParserConfig) {
               if (fieldMap.contains(name)) {
                 val fd = fieldMap(name)
                 if (jValue != JNull || allowNullValueForField(fd)) {
-                  fd.containingOneof.foreach(o =>
-                    if (
-                      !config.isIgnoringOverlappingOneofFields && !usedOneofs
-                        .add(o)
-                    ) {
-                      throw new JsonFormatException(
-                        s"Overlapping field '${name}' in oneof"
-                      )
-                    }
-                  )
-                  valueMapBuilder += (fd -> parseValue(fd, jValue))
+                  val parsed = parseValue(fd, jValue)
+                  if (parsed != PEmpty) {
+                    fd.containingOneof.foreach(o =>
+                      if (
+                        !config.isIgnoringOverlappingOneofFields && !usedOneofs
+                          .add(o)
+                      ) {
+                        throw new JsonFormatException(
+                          s"Overlapping field '${name}' in oneof"
+                        )
+                      }
+                    )
+                    valueMapBuilder += (fd -> parsed)
+                  }
                 }
               } else if (
                 ExtensionFormat.find(cmp, typeRegistry, name).isDefined
@@ -698,10 +708,7 @@ class Parser private (config: Parser.ParserConfig) {
         s"Invalid enum value: $value for enum type: ${enumDescriptor.fullName}"
       )
 
-    def defaultValue =
-      if (config.isIgnoringUnknownFields && enumDescriptor.file.isProto3)
-        enumDescriptor.findValueByNumber(0)
-      else None
+    def defaultValue: Option[EnumValueDescriptor] = None
 
     val res = value match {
       case JDecimal(v) =>

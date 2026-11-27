@@ -669,6 +669,35 @@ class JsonFormatSpec
     assertParse("""{"@type": "foo"}""", MyTest())
   }
 
+  "ignored unknown enum names" should "drop collection elements and map entries like Java" in {
+    val json =
+      """{"repEnum":["V1","MISSING","V2"],"intToEnum":{"1":"V1","2":"MISSING"}}"""
+    val parser = new Parser().ignoringUnknownFields
+    val proto2 = parser.fromJsonString[MyTest](json)
+    proto2.repEnum must be(Seq(MyEnum.V1, MyEnum.V2))
+    proto2.intToEnum must be(Map(1 -> MyEnum.V1))
+    val proto3 = parser.fromJsonString[MyTest3](json)
+    proto3.repEnum.map(_.value) must be(Seq(1, 2))
+    proto3.intToEnum.map { case (k, v) => k -> v.value } must be(Map(1 -> 1))
+    for (
+      message <- Seq(MyTest.toJavaProto(proto2), MyTest3.toJavaProto(proto3))
+    ) {
+      val builder = message.newBuilderForType()
+      JavaJsonFormat.parser().ignoringUnknownFields().merge(json, builder)
+      builder.build() must be(message)
+    }
+    parser.fromJsonString[MyTest3]("""{"optEnum":"MISSING"}""") must be(
+      MyTest3()
+    )
+    parser.fromJsonString[MyTest]("""{"optEnum":"MISSING"}""") must be(MyTest())
+    intercept[JsonFormatException](new Parser().fromJsonString[MyTest](json))
+    intercept[JsonFormatException](new Parser().fromJsonString[MyTest3](json))
+    parser
+      .fromJsonString[MyTest3]("""{"repEnum":[123]}""")
+      .repEnum
+      .map(_.value) must be(Seq(123))
+  }
+
   "booleans" should "reject quoted values as required by recommended ProtoJSON conformance" in {
     for (value <- Seq("true", "false")) {
       intercept[JsonFormatException] {
