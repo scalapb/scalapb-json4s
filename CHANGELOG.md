@@ -11,6 +11,8 @@ its last common commit with `0.12.x`, `2afe38f` (2023-11-23).
 
 - When ignoring unknown JSON fields, omit unknown enum names from repeated fields and maps instead of inserting default values or failing. Unknown numeric proto3 values remain supported.
 
+- Edition 2023: respect resolved scalar presence and enum openness in JSON, and serialize DELIMITED/group messages. Requires the corresponding ScalaPB Editions runtime and generator.
+
 ## 1.0.0-alpha.3 — 2026-11-01
 
 Changes since `1.0.0-alpha.2`. ScalaPB remains at `1.0.0-alpha.6`; protobuf and json4s dependency versions are unchanged.

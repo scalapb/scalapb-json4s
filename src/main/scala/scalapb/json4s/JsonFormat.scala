@@ -327,17 +327,18 @@ class Printer private (config: Printer.PrinterConfig) {
                 case v           =>
                   throw new JsonFormatException(s"Unexpected value for key: $v")
               }
-              val value = if (valueDescriptor.protoType.isTypeMessage) {
-                toJson(
-                  x.getFieldByNumber(valueDescriptor.number)
-                    .asInstanceOf[GeneratedMessage]
-                )
-              } else {
-                serializeSingleValue(
-                  valueDescriptor,
-                  x.getField(valueDescriptor)
-                )
-              }
+              val value =
+                if (valueDescriptor.scalaType.isInstanceOf[ScalaType.Message]) {
+                  toJson(
+                    x.getFieldByNumber(valueDescriptor.number)
+                      .asInstanceOf[GeneratedMessage]
+                  )
+                } else {
+                  serializeSingleValue(
+                    valueDescriptor,
+                    x.getField(valueDescriptor)
+                  )
+                }
               key -> value
             }.toSeq: _*)
           )
@@ -379,7 +380,7 @@ class Printer private (config: Printer.PrinterConfig) {
         if (
           config.isIncludingDefaultValueFields ||
           !fd.isOptional ||
-          !fd.file.isProto3 ||
+          fd.hasPresence ||
           (v != JsonFormat.defaultValue(fd)) ||
           fd.containingOneof.isDefined
         ) {
@@ -401,15 +402,13 @@ class Printer private (config: Printer.PrinterConfig) {
         val descriptor = m.companion.scalaDescriptor
         b.sizeHint(descriptor.fields.size)
         descriptor.fields.foreach { f =>
-          if (f.asProto.getType != FieldDescriptorProto.Type.TYPE_GROUP) {
-            val name =
-              if (config.isPreservingProtoFieldNames) f.name
-              else JsonFormat.jsonName(f)
-            if (f.protoType.isTypeMessage) {
-              serializeMessageField(f, name, m.getFieldByNumber(f.number), b)
-            } else {
-              serializeNonMessageField(f, name, m.getField(f), b)
-            }
+          val name =
+            if (config.isPreservingProtoFieldNames) f.name
+            else JsonFormat.jsonName(f)
+          if (f.scalaType.isInstanceOf[ScalaType.Message]) {
+            serializeMessageField(f, name, m.getFieldByNumber(f.number), b)
+          } else {
+            serializeNonMessageField(f, name, m.getField(f), b)
           }
         }
         JObject(
@@ -701,7 +700,7 @@ class Parser private (config: Parser.ParserConfig) {
       value: JValue
   ): Option[EnumValueDescriptor] = {
     def enumValueFromInt(v: Int): Option[EnumValueDescriptor] =
-      if (enumDescriptor.file.isProto3)
+      if (!enumDescriptor.isClosed)
         Some(enumDescriptor.findValueByNumberCreatingIfUnknown(v))
       else
         enumDescriptor.findValueByNumber(v)
