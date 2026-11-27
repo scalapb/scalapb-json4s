@@ -6,6 +6,56 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.must.Matchers
 
 class StructFormatSpec extends AnyFlatSpec with Matchers with JavaAssertions {
+  "Value JSON serialization" should "reject non-finite numbers like Java" in {
+    for (
+      number <- Seq(
+        Double.NaN,
+        Double.PositiveInfinity,
+        Double.NegativeInfinity
+      )
+    ) {
+      intercept[JsonFormatException] {
+        JsonFormat.toJsonString(Value(Value.Kind.NumberValue(number)))
+      }
+      intercept[IllegalArgumentException] {
+        com.google.protobuf.util.JsonFormat
+          .printer()
+          .print(
+            com.google.protobuf.Value
+              .newBuilder()
+              .setNumberValue(number)
+              .build()
+          )
+      }
+    }
+    JsonFormat.toJsonString(Value(Value.Kind.StringValue("NaN"))) must be(
+      "\"NaN\""
+    )
+  }
+
+  "Duration JSON serialization" should "enforce the exclusive positive nanos bound" in {
+    for (nanos <- Seq(-1000000000, 1000000000)) {
+      intercept[IllegalArgumentException] {
+        JsonFormat.toJsonString(
+          com.google.protobuf.duration.Duration(nanos = nanos)
+        )
+      }
+      intercept[IllegalArgumentException] {
+        com.google.protobuf.util.JsonFormat
+          .printer()
+          .print(
+            com.google.protobuf.Duration.newBuilder().setNanos(nanos).build()
+          )
+      }
+    }
+    for (nanos <- Seq(-999999999, 999999999)) {
+      val value = com.google.protobuf.duration.Duration(nanos = nanos)
+      JsonFormat.fromJsonString[com.google.protobuf.duration.Duration](
+        JsonFormat.toJsonString(value)
+      ) must be(value)
+    }
+  }
+
   val ListValueExample = ListValue(
     values = Seq(
       Value(Value.Kind.NumberValue(-245.0)),

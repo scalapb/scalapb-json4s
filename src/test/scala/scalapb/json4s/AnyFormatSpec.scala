@@ -10,6 +10,17 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.must.Matchers
 
 class AnyFormatSpec extends AnyFlatSpec with Matchers with JavaAssertions {
+  "empty Any" should "round trip as an empty JSON object like Java" in {
+    JsonFormat.fromJsonString[PBAny]("{}") must be(PBAny())
+    JsonFormat.toJsonString(PBAny()) must be("{}")
+    val builder = com.google.protobuf.Any.newBuilder()
+    com.google.protobuf.util.JsonFormat.parser().merge("{}", builder)
+    builder.build() must be(com.google.protobuf.Any.getDefaultInstance)
+    intercept[JsonFormatException] {
+      JsonFormat.fromJsonString[PBAny]("""{"other": 1}""")
+    }
+  }
+
   val RawExample = AnyTest("test")
 
   val RawJson = parse(s"""{"field":"test"}""")

@@ -10,7 +10,12 @@ object StructFormat {
     v.kind match {
       case Kind.Empty              => JNull
       case Kind.NullValue(value)   => JNull
-      case Kind.NumberValue(value) => JDouble(value)
+      case Kind.NumberValue(value) =>
+        if (value.isNaN || value.isInfinity)
+          throw new JsonFormatException(
+            "Non-finite numbers cannot be serialized as google.protobuf.Value"
+          )
+        JDouble(value)
       case Kind.StringValue(value) => JString(value)
       case Kind.BoolValue(value)   => JBool(value)
       case Kind.StructValue(value) => structWriter(value)
