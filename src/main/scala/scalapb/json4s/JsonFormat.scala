@@ -652,11 +652,14 @@ class Parser private (config: Parser.ParserConfig) {
         value match {
           case JObject(fields) =>
             val usedOneofs = mutable.Set[OneofDescriptor]()
+            val usedFields = mutable.Set[FieldDescriptor]()
             val fieldMap = JsonFormat.MemorizedFieldNameMap(cmp.scalaDescriptor)
             val valueMapBuilder = Map.newBuilder[FieldDescriptor, PValue]
             fields.foreach { case (name: String, jValue: JValue) =>
               if (fieldMap.contains(name)) {
                 val fd = fieldMap(name)
+                if (!usedFields.add(fd))
+                  throw new JsonFormatException(s"Duplicate field '${name}'")
                 if (jValue != JNull || allowNullValueForField(fd)) {
                   val parsed = parseValue(fd, jValue)
                   if (parsed != PEmpty) {

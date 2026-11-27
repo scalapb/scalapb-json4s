@@ -669,6 +669,25 @@ class JsonFormatSpec
     assertParse("""{"@type": "foo"}""", MyTest())
   }
 
+  "duplicate JSON fields" should "reject repeated names and proto-name aliases" in {
+    for (
+      json <- Seq(
+        """{"hello":"first","hello":"second"}""",
+        """{"optMessage":{},"opt_message":{}}""",
+        """{"opt_message":{},"optMessage":{}}""",
+        """{"primitiveSequence":[],"primitive_sequence":[]}"""
+      )
+    ) {
+      intercept[JsonFormatException](JsonFormat.fromJsonString[MyTest](json))
+      intercept[JsonFormatException](
+        new Parser().ignoringUnknownFields.fromJsonString[MyTest](json)
+      )
+    }
+    JsonFormat.fromJsonString[MyTest]("""{"hello":"ok","foobar":2}""") must be(
+      MyTest(hello = Some("ok"), foobar = Some(2))
+    )
+  }
+
   "ignored unknown enum names" should "drop collection elements and map entries like Java" in {
     val json =
       """{"repEnum":["V1","MISSING","V2"],"intToEnum":{"1":"V1","2":"MISSING"}}"""
