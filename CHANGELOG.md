@@ -5,13 +5,20 @@ its last common commit with `0.12.x`, `2afe38f` (2023-11-23).
 
 ## Unreleased — 1.0.x (master)
 
+## 1.0.0-alpha.4
+
+Requires ScalaPB `1.0.0-alpha.7` (generator and runtime), protobuf-java 4.36.2.
+Supports Scala 2.12, 2.13 and 3. Upgrade the ScalaPB runtime alongside json4s.
+The same resolved-feature handling supports Editions 2023, 2024 and 2026.
+
+
 - Reject duplicate JSON fields, including alternate proto/JSON spellings of the same field, instead of silently keeping the last value.
 
 - Round-trip empty Any messages as `{}`; reject non-finite Value numbers and Duration nanos outside ±999,999,999 when writing JSON.
 
 - When ignoring unknown JSON fields, omit unknown enum names from repeated fields and maps instead of inserting default values or failing. Unknown numeric proto3 values remain supported.
 
-- Edition 2023: respect resolved scalar presence and enum openness in JSON, and serialize DELIMITED/group messages. Requires the corresponding ScalaPB Editions runtime and generator.
+- Editions 2023/2024/2026: respect resolved scalar presence and enum openness in JSON, and serialize DELIMITED/group messages. Requires the corresponding ScalaPB Editions runtime and generator.
 
 ## 1.0.0-alpha.3 — 2026-11-01
 
