@@ -7,7 +7,7 @@ its last common commit with `0.12.x`, `2afe38f` (2023-11-23).
 
 ## 1.0.0-alpha.4
 
-Requires ScalaPB `1.0.0-alpha.7` (generator and runtime), protobuf-java 4.36.2.
+Requires ScalaPB `1.0.0-alpha.8` (generator and runtime), protobuf-java 4.36.2.
 Supports Scala 2.12, 2.13 and 3. Upgrade the ScalaPB runtime alongside json4s.
 The same resolved-feature handling supports Editions 2023, 2024 and 2026.
 
